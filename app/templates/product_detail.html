@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>{{ product.title }}</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f7fa; color: #1f2937; }
+
+        /* --- NAVBAR & SUGGESTION --- */
+        .navbar { background-color: #131921 !important; padding: 10px 0; z-index: 1030; }
+        .form-control:focus { box-shadow: none; border-color: #ff9900; }
+        #suggestionBox { top: 100%; border-radius: 0 0 12px 12px; border: 1px solid #ddd; border-top: none; }
+
+        /* --- KHU VỰC SẢN PHẨM --- */
+        .product-section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 30px; margin-top: 20px; }
+        .img-container { height: 380px; display: flex; align-items: center; justify-content: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
+        .main-img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+        .product-title { font-size: 1.6rem; font-weight: 700; color: #111; line-height: 1.3; margin-bottom: 15px; }
+        .rating-wrapper { display: flex; align-items: center; gap: 8px; font-size: 1rem; margin-bottom: 15px; }
+        .stars { color: #ffa41c; letter-spacing: 1px; }
+
+        .price-wrapper { display: flex; align-items: baseline; gap: 15px; margin-bottom: 25px; }
+        .price-main { color: #B12704; font-size: 2rem; font-weight: 700; line-height: 1; }
+        .feature-list li { margin-bottom: 8px; color: #444; font-size: 0.95rem; line-height: 1.5; }
+
+        /* --- CỘT PHẢI: BUY BOX & TECH SPECS --- */
+        .buy-box { border: 1px solid #d5d9d9; border-radius: 8px; padding: 18px; background: #fff; }
+        .btn-add-cart { background-color: #ffd814; border: 1px solid #fcd200; border-radius: 50px; font-weight: 600; }
+        .btn-add-cart:hover { background-color: #f7ca00; }
+        .btn-buy-now { background-color: #ffa41c; border: 1px solid #ff8f00; border-radius: 50px; font-weight: 600; }
+        .btn-buy-now:hover { background-color: #fa8900; }
+
+        .tech-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 20px; margin-top: 20px; }
+        .tech-header { font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: #6c757d; letter-spacing: 0.5px; margin-bottom: 20px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; }
+        .spec-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.9rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+        .spec-val { font-weight: 600; color: #333; text-align: right; }
+        .ai-badge { background: #e3f2fd; color: #0c4a6e; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; font-size: 0.9rem; margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+
+        /* --- CONTROL BAR BÁM DÍNH --- */
+        .control-bar { background: #232f3e; border-radius: 10px; padding: 15px 30px; margin: 30px 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+        .form-select-custom { background-color: #fff; color: #333; border: 2px solid #eee; border-radius: 6px; padding: 10px 15px; font-weight: 600; cursor: pointer; min-width: 280px; font-size: 0.95rem; outline: none; }
+
+        /* --- GIAO DIỆN NÚT GIỎ HÀNG NHỎ --- */
+        .btn-quick-cart {
+            width: 34px; height: 34px; border-radius: 50%;
+            display: flex; align-items: center; justify-content: center;
+            background-color: #ffd814; border: 1px solid #fcd200;
+            color: #111; transition: all 0.2s;
+        }
+        .btn-quick-cart:hover { background-color: #f7ca00; transform: scale(1.1); }
+
+        /* --- REVIEW SECTION --- */
+        .review-card { background: #fff; border-bottom: 1px solid #eee; padding: 20px 0; }
+        .review-card:last-child { border-bottom: none; }
+        .avatar-circle { width: 42px; height: 42px; background-color: #e3f2fd; color: #0d6efd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
+        .review-date { font-size: 0.85rem; color: #666; }
+        .review-text { color: #333; line-height: 1.5; font-size: 0.95rem; margin-top: 8px; }
+        .verified-badge { color: #c45500; font-weight: 600; font-size: 0.8rem; }
+        .pagination .page-link { color: #333; border: 1px solid #dee2e6; margin: 0 2px; border-radius: 4px; }
+        .pagination .page-item.active .page-link { background-color: #232f3e; border-color: #232f3e; color: white; }
+
+        /* --- RECOMMENDATIONS --- */
+        .rec-section-title { font-weight: 700; font-size: 1.4rem; color: #333; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
+        .rec-card { background: white; border: 1px solid #f0f0f0; border-radius: 10px; transition: transform 0.2s, box-shadow 0.2s; height: 100%; display: flex; flex-direction: column; }
+        .rec-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #ddd; }
+        .rec-img-box { height: 180px; padding: 20px; display: flex; align-items: center; justify-content: center; background: #fff; border-bottom: 1px solid #f9f9f9; border-radius: 10px 10px 0 0; }
+        .rec-img { max-height: 100%; max-width: 100%; object-fit: contain; }
+        .rec-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+        .rec-title { font-size: 0.95rem; font-weight: 500; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; line-height: 1.4; }
+        .rec-title:hover { color: #B12704; }
+        .rec-price { color: #B12704; font-weight: 700; font-size: 1.1rem; }
+        .hidden-rec { display: none; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top" style="background-color: #131921; padding: 12px 0;">
+  <div class="container-fluid px-lg-5">
+    <a class="navbar-brand fw-bold text-white me-4 fs-4" href="/">
+        Amazon <span style="color: #febd69;">AI</span>
+    </a>
+    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+        <span class="navbar-toggler-icon"></span>
+    </button>
+
+    <div class="collapse navbar-collapse" id="navbarNav">
+      <div class="position-relative flex-grow-1 mx-lg-4 my-2 my-lg-0" style="max-width: 600px;">
+          <form class="d-flex" action="/search" method="GET" id="searchForm">
+            <input class="form-control rounded-start border-0 px-3" type="search" name="q" id="searchInput" placeholder="Tìm kiếm tủ lạnh, máy giặt, tivi..." autocomplete="off" required>
+            <button class="btn rounded-end px-4" type="submit" style="background-color: #febd69; color: #111; font-weight: 600;"><i class="bi bi-search"></i></button>
+          </form>
+          <div id="suggestionBox" class="list-group position-absolute w-100 shadow mt-0" style="display: none; z-index: 1000; max-height: 400px; overflow-y: auto;"></div>
+      </div>
+
+      <ul class="navbar-nav ms-auto align-items-center">
+        <li class="nav-item me-2">
+            <a href="/dashboard" class="nav-link text-white"><i class="bi bi-graph-up me-1"></i> Dashboard</a>
+        </li>
+        <li class="nav-item me-3">
+            <a href="/cart" class="nav-link text-white position-relative d-flex align-items-center">
+                <i class="bi bi-cart3 fs-4"></i>
+                <span class="position-absolute top-10 start-100 translate-middle badge rounded-pill text-dark" style="background-color: #febd69; font-size: 0.7rem; margin-top: 5px; margin-left: -5px;">0</span>
+                <span class="ms-1 fw-bold d-none d-lg-block">Giỏ hàng</span>
+            </a>
+        </li>
+        <li class="nav-item dropdown">
+            <a class="nav-link dropdown-toggle text-white fw-bold d-flex align-items-center" href="#" data-bs-toggle="dropdown">
+                <i class="bi bi-person-circle fs-4 me-1"></i> Tài khoản
+            </a>
+            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-2">
+                <li><a class="dropdown-item fw-bold" style="color: #B12704;" href="/login">Đăng nhập / Đăng ký</a></li>
+                <li><hr class="dropdown-divider"></li>
+                <li><a class="dropdown-item" href="/profile"><i class="bi bi-person-vcard me-2"></i>Hồ sơ cá nhân</a></li>
+                <li><a class="dropdown-item" href="/orders"><i class="bi bi-box-seam me-2"></i>Đơn hàng của tôi</a></li>
+            </ul>
+        </li>
+      </ul>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-lg-5 pb-5">
+
+    <div class="product-section">
+        <div class="row g-5">
+            <div class="col-lg-4 col-md-5">
+                <div class="img-container border">
+                    {% if product.images %}
+                        <img src="{{ product.images[0].large }}" class="main-img" alt="{{ product.title }}">
+                    {% else %}
+                        <img src="https://via.placeholder.com/400?text=No+Image" class="main-img">
+                    {% endif %}
+                </div>
+            </div>
+
+            <div class="col-lg-5 col-md-7">
+                <div class="d-flex align-items-center mb-2">
+                    <span class="badge bg-secondary me-2">{{ product.main_cat | default('Electronics') }}</span>
+                    <span class="text-muted small fw-bold">ID: {{ product._id }}</span>
+                </div>
+
+                <h1 class="product-title">{{ product.title }}</h1>
+
+                <div class="rating-wrapper">
+                    {% set rating = product.avg_rating | default(0) | float %}
+                    <span class="fw-bold text-warning fs-5">{{ rating }}</span>
+                    <div class="stars mx-2">
+                        {% for i in range(1, 6) %}
+                            {% if rating >= i %}<i class="bi bi-star-fill"></i>
+                            {% elif rating >= i - 0.5 %}<i class="bi bi-star-half"></i>
+                            {% else %}<i class="bi bi-star"></i>{% endif %}
+                        {% endfor %}
+                    </div>
+                    <a href="#reviewSection" class="text-primary small text-decoration-underline ms-1 pointer">{{ product.review_count | default(0) }} đánh giá</a>
+                </div>
+
+                <hr class="my-4">
+
+                <div>
+                    <h6 class="fw-bold text-dark mb-3"><i class="bi bi-list-check me-2"></i>Đặc điểm nổi bật:</h6>
+                    <ul class="list-unstyled feature-list ps-1">
+                        {% if product.features %}
+                            {% for f in product.features[:5] %}
+                                <li class="d-flex align-items-start"><i class="bi bi-check2-circle mt-1 text-primary me-2"></i> <span>{{ f }}</span></li>
+                            {% endfor %}
+                        {% elif product.description %}
+                             <li class="d-flex align-items-start"><i class="bi bi-info-circle-fill mt-1 text-primary me-2"></i> <span>{{ product.description[:300] }}...</span></li>
+                        {% else %}
+                             <li class="fst-italic text-muted">Chưa có thông tin chi tiết.</li>
+                        {% endif %}
+                    </ul>
+                </div>
+            </div>
+
+            <div class="col-lg-3">
+                <div class="buy-box shadow-sm mb-4">
+                    <div class="price-main mb-2">
+                        {% if product.price %}${{ product.price }}{% else %}Liên hệ{% endif %}
+                    </div>
+                    <div class="text-success fw-bold fs-6 mb-3">Còn hàng (In Stock)</div>
+
+                    <form action="/add_to_cart" method="POST">
+                        <input type="hidden" name="product_id" value="{{ product._id }}">
+                        <div class="mb-3 d-flex align-items-center gap-2">
+                            <label class="fw-semibold text-dark">Số lượng:</label>
+                            <select class="form-select form-select-sm w-auto shadow-sm border-secondary" name="quantity">
+                                <option value="1">1</option>
+                                <option value="2">2</option>
+                                <option value="3">3</option>
+                                <option value="4">4</option>
+                                <option value="5">5</option>
+                            </select>
+                        </div>
+                        <button type="submit" class="btn w-100 btn-add-cart mb-2 shadow-sm"><i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ hàng</button>
+                        <button type="button" onclick="window.location.href='/checkout'" class="btn w-100 btn-buy-now shadow-sm"><i class="bi bi-lightning-charge-fill me-1"></i> Mua ngay</button>
+                    </form>
+
+                    <div class="mt-3 pt-3 border-top small text-muted">
+                        <div class="d-flex justify-content-between mb-1"><span>Giao hàng bởi</span> <span class="fw-semibold text-dark">Amazon AI</span></div>
+                        <div class="d-flex justify-content-between mb-1"><span>Bán bởi</span> <span class="fw-semibold text-dark">Amazon AI</span></div>
+                        <div class="d-flex justify-content-between"><span>Đổi trả</span> <span class="fw-semibold text-dark">Trong 15 ngày</span></div>
+                    </div>
+                </div>
+
+                <div class="tech-card shadow-sm">
+                    <div class="tech-header">Dữ liệu hệ thống</div>
+                    <div class="spec-row">
+                        <span class="text-muted">Thương hiệu</span>
+                        <span class="spec-val">{{ product.brand | default('Generic') }}</span>
+                    </div>
+                    <div class="spec-row">
+                        <span class="text-muted">Xếp hạng</span>
+                        <span class="spec-val">#{{ range(1, 100) | random }} in Sales</span>
+                    </div>
+
+                    <div class="ai-badge">
+                        <i class="bi bi-robot fs-2"></i>
+                        <div class="lh-sm">
+                            <strong class="d-block mb-1">AI Powered:</strong>
+                            Sản phẩm này đang được dùng làm mỏ neo để tìm kiếm tương đồng.
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="control-bar position-sticky" style="top: 75px; z-index: 1020;">
+        <div class="d-flex align-items-center gap-3">
+            <div class="bg-white bg-opacity-10 p-2 rounded-circle text-white border border-white border-opacity-25">
+                <i class="bi bi-cpu fs-4"></i>
+            </div>
+            <div class="d-none d-md-block">
+                <div class="fw-bold fs-5">Bộ lọc Gợi ý AI</div>
+                <div class="small text-white-50">Đổi mô hình thuật toán</div>
+            </div>
+        </div>
+
+        <div class="d-flex align-items-center gap-3">
+            <form action="/product/{{ product._id }}" method="GET" class="d-flex align-items-center m-0">
+                <input type="hidden" name="page" value="1">
+                <select name="model" class="form-select-custom shadow-sm" style="min-width: 200px;" onchange="this.form.submit()">
+                    <option value="hybrid" {% if selected_model == 'hybrid' %}selected{% endif %}>🚀 Hybrid (Kết hợp)</option>
+                    <option value="bert" {% if selected_model == 'bert' %}selected{% endif %}>✨ Content Based</option>
+                    <option value="svd" {% if selected_model == 'svd' %}selected{% endif %}>🤝 Collaborative</option>
+                    <option value="price" {% if selected_model == 'price' %}selected{% endif %}>💰 Tầm giá tương đương</option>
+                    <option value="store" {% if selected_model == 'store' %}selected{% endif %}>🏪 Cùng thương hiệu</option>
+                </select>
+            </form>
+
+            <form action="/add_to_cart" method="POST" class="m-0 border-start ps-3 border-secondary border-opacity-50">
+                <input type="hidden" name="product_id" value="{{ product._id }}">
+                <input type="hidden" name="quantity" value="1">
+                <button type="submit" class="btn fw-bold px-4 shadow-sm" style="background-color: #ffd814; color: #111; border-radius: 50px; border: 1px solid #fcd200; white-space: nowrap; transition: 0.2s;">
+                    <i class="bi bi-cart-plus-fill fs-5 me-1"></i> Thêm vào giỏ
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <div class="mb-5">
+        <div class="rec-section-title pb-2 border-bottom">
+            <i class="bi bi-lightbulb-fill text-warning"></i>
+            Sản phẩm tương tự
+            <span class="badge bg-secondary fw-normal fs-6 ms-2 rounded-pill">Top {{ recommendations|length }}</span>
+        </div>
+
+        {% if recommendations %}
+        <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-4" id="recommendationList">
+            {% for rec in recommendations %}
+            <div class="col {% if loop.index > 6 %}hidden-rec{% endif %}">
+                <div class="rec-card product-card">
+                    <a href="/product/{{ rec._id }}?model={{ selected_model }}" class="text-decoration-none text-dark flex-grow-1 d-flex flex-column">
+                        <div class="rec-img-box">
+                            {% if rec.images %}
+                                <img src="{{ rec.images[0].large }}" class="rec-img">
+                            {% else %}
+                                <img src="https://via.placeholder.com/200?text=No+Img" class="rec-img">
+                            {% endif %}
+                        </div>
+                        <div class="rec-body pb-0">
+                            <div class="rec-title" title="{{ rec.title }}">{{ rec.title }}</div>
+                            <div class="mb-2">
+                                <span class="fw-bold text-dark small me-1">{{ rec.average_rating|default(4.5)|round(1) }}</span>
+                                <i class="bi bi-star-fill text-warning small"></i>
+                            </div>
+                        </div>
+                    </a>
+
+                    <div class="px-3 pb-3 pt-2 d-flex justify-content-between align-items-center border-top bg-light rounded-bottom">
+                        <span class="rec-price mb-0">{% if rec.price %}${{ rec.price }}{% else %}Liên hệ{% endif %}</span>
+                        <form action="/add_to_cart" method="POST" class="m-0">
+                            <input type="hidden" name="product_id" value="{{ rec._id }}">
+                            <input type="hidden" name="quantity" value="1">
+                            <button type="submit" class="btn-quick-cart shadow-sm" style="width: 32px; height: 32px;" title="Thêm vào giỏ">
+                                <i class="bi bi-cart-plus-fill fs-6"></i>
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if recommendations|length > 6 %}
+        <div class="text-center mt-4">
+            <button id="loadMoreBtn" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+                Xem thêm sản phẩm <i class="bi bi-chevron-down ms-1"></i>
+            </button>
+        </div>
+        {% endif %}
+
+        {% else %}
+            <div class="alert alert-warning text-center">Không tìm thấy gợi ý.</div>
+        {% endif %}
+    </div>
+
+    <div class="row mt-4" id="reviewSection">
+        <div class="col-lg-8">
+            <div class="product-section mt-0">
+                <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                    <h5 class="fw-bold mb-0">
+                        <i class="bi bi-chat-square-quote-fill me-2 text-primary"></i>Đánh giá từ khách hàng
+                    </h5>
+                    <span class="badge bg-light text-dark border">Tổng {{ total_reviews }} đánh giá</span>
+                </div>
+
+                {% if reviews %}
+                    <div class="review-list">
+                        {% for review in reviews %}
+                        <div class="review-card">
+                            <div class="d-flex justify-content-between align-items-start">
+                                <div class="d-flex gap-3">
+                                    <div class="avatar-circle">
+                                        {{ review.reviewerName[0] if review.reviewerName else 'U' }}
+                                    </div>
+                                    <div>
+                                        <div class="fw-bold text-dark">{{ review.reviewerName | default('Khách hàng Amazon') }}</div>
+                                        <div class="text-warning" style="font-size: 0.8rem;">
+                                            {% set score = review.rating | default(5) | int %}
+                                            {% for i in range(score) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                            <span class="text-dark fw-bold ms-2">{{ review.title }}</span>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="text-end">
+                                    <div class="review-date small text-muted">{{ review.reviewTime | default(review.timestamp) }}</div>
+                                </div>
+                            </div>
+
+                            <div class="review-text ps-5 ms-2">
+                                {{ review.text }}
+                            </div>
+                            <div class="ps-5 ms-2 mt-2">
+                                <span class="verified-badge"><i class="bi bi-check-circle-fill"></i> Verified Purchase</span>
+                            </div>
+                        </div>
+                        {% endfor %}
+                    </div>
+
+                    {% if total_pages > 1 %}
+                    <nav aria-label="Review pagination" class="mt-4">
+                        <ul class="pagination justify-content-center">
+                            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('product_detail', product_id=product._id, page=current_page-1, model=selected_model) }}#reviewSection">
+                                    <i class="bi bi-chevron-left"></i>
+                                </a>
+                            </li>
+
+                            {% for p in range(1, total_pages + 1) %}
+                                {% if p == 1 or p == total_pages or (p >= current_page - 2 and p <= current_page + 2) %}
+                                    <li class="page-item {% if p == current_page %}active{% endif %}">
+                                        <a class="page-link" href="{{ url_for('product_detail', product_id=product._id, page=p, model=selected_model) }}#reviewSection">
+                                            {{ p }}
+                                        </a>
+                                    </li>
+                                {% elif p == current_page - 3 or p == current_page + 3 %}
+                                    <li class="page-item disabled"><span class="page-link">...</span></li>
+                                {% endif %}
+                            {% endfor %}
+
+                            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                                <a class="page-link" href="{{ url_for('product_detail', product_id=product._id, page=current_page+1, model=selected_model) }}#reviewSection">
+                                    <i class="bi bi-chevron-right"></i>
+                                </a>
+                            </li>
+                        </ul>
+                    </nav>
+                    {% endif %}
+
+                {% else %}
+                    <div class="text-center py-5">
+                        <i class="bi bi-chat-left-dots fs-1 text-muted"></i>
+                        <p class="text-muted mt-2">Sản phẩm này chưa có bình luận nào.</p>
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-4">
+            <div class="product-section mt-0 h-100">
+                <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill me-2"></i>Phân tích cảm xúc (Sentiment)</h6>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Tích cực (5 sao)</span>
+                        <span class="fw-bold">{{ sentiment.pos }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                        <div class="progress-bar bg-success" role="progressbar"
+                             style="width: {{ sentiment.pos }}%; transition: width 1s ease-in-out;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Trung bình (3-4 sao)</span>
+                        <span class="fw-bold">{{ sentiment.neu }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                        <div class="progress-bar bg-warning" role="progressbar"
+                             style="width: {{ sentiment.neu }}%; transition: width 1s ease-in-out;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mb-3">
+                    <div class="d-flex justify-content-between small mb-1">
+                        <span>Tiêu cực (1-2 sao)</span>
+                        <span class="fw-bold">{{ sentiment.neg }}%</span>
+                    </div>
+                    <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                        <div class="progress-bar bg-danger" role="progressbar"
+                             style="width: {{ sentiment.neg }}%; transition: width 1s ease-in-out;">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="alert alert-light border mt-4 small d-flex gap-2">
+                    <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+                    <div>
+                        Biểu đồ này được hệ thống tự động tính toán dựa trên <strong>{{ total_reviews }}</strong> đánh giá thực tế của sản phẩm này.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function() {
+                const hiddenRecs = document.querySelectorAll('.hidden-rec');
+                hiddenRecs.forEach(function(el) {
+                    el.classList.remove('hidden-rec');
+                    el.style.opacity = 0;
+                    el.style.display = 'block';
+                    setTimeout(() => el.style.opacity = 1, 50);
+                });
+                this.style.display = 'none';
+            });
+        }
+    });
+
+    const searchInput = document.getElementById('searchInput');
+    const suggestionBox = document.getElementById('suggestionBox');
+    let timeout = null;
+    searchInput.addEventListener('input', function() {
+        const query = this.value.trim();
+        clearTimeout(timeout);
+        if (query.length < 1) { suggestionBox.style.display = 'none'; return; }
+        timeout = setTimeout(() => { fetchSuggestions(query); }, 300);
+    });
+    async function fetchSuggestions(query) {
+        try {
+            const response = await fetch(`/api/suggest?q=${encodeURIComponent(query)}`);
+            const suggestions = await response.json();
+            if (suggestions.length > 0) { renderSuggestions(suggestions); suggestionBox.style.display = 'block'; } else { suggestionBox.style.display = 'none'; }
+        } catch (error) { console.error(error); }
+    }
+    function renderSuggestions(items) {
+        suggestionBox.innerHTML = '';
+        items.forEach(item => {
+            const a = document.createElement('a');
+            a.className = 'list-group-item list-group-item-action d-flex align-items-center p-2';
+            a.style.cursor = 'pointer';
+            if (item.type === 'history') {
+                a.href = `/search?q=${encodeURIComponent(item.value)}`;
+                a.innerHTML = `<span class="text-secondary me-3">🕒</span> <strong>${item.value}</strong>`;
+            } else {
+                a.href = `/product/${item.id}`;
+                let imgSrc = item.img ? item.img : 'https://via.placeholder.com/50';
+                a.innerHTML = `<div class="me-3 border rounded p-1 bg-white" style="width: 40px; height: 40px; flex-shrink: 0;"><img src="${imgSrc}" style="width: 100%; height: 100%; object-fit: contain;"></div><div class="flex-grow-1" style="min-width:0"><div class="text-truncate fw-bold text-dark" style="font-size:0.85rem">${item.label}</div><small class="text-danger fw-bold">${item.price}</small></div>`;
+            }
+            suggestionBox.appendChild(a);
+        });
+    }
+    document.addEventListener('click', function(e) { if (!searchInput.contains(e.target) && !suggestionBox.contains(e.target)) suggestionBox.style.display = 'none'; });
+</script>
+</body>
+</html>

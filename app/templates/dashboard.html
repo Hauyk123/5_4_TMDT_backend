@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Amazon AI Dashboard</title>
+
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <style>
+        :root {
+            --primary-bg: #f3f4f6;
+            --card-bg: #ffffff;
+            --amazon-dark: #232f3e;
+            --amazon-light: #37475a;
+            --accent-color: #ff9900;
+            --text-main: #111827;
+            --text-sub: #6b7280;
+            --radius: 12px;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            background-color: var(--primary-bg);
+            color: var(--text-main);
+            padding-bottom: 50px;
+        }
+
+        /* --- Animations --- */
+        .fade-in { animation: fadeIn 0.8s ease-in-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(15px); } to { opacity: 1; transform: translateY(0); } }
+
+        /* --- Navbar --- */
+        .navbar { background-color: var(--amazon-dark); box-shadow: 0 4px 10px rgba(0,0,0,0.1); }
+        .navbar-brand { font-weight: 700; letter-spacing: 0.5px; }
+
+        /* --- AI Model Card (Highlight Section) --- */
+        .ai-card {
+            background: linear-gradient(135deg, #232f3e 0%, #161e2e 100%);
+            color: white;
+            border-radius: var(--radius);
+            box-shadow: 0 10px 30px rgba(35, 47, 62, 0.15);
+            border: 1px solid rgba(255,255,255,0.1);
+        }
+        .ai-metric-label { font-size: 0.75rem; text-transform: uppercase; letter-spacing: 1px; color: rgba(255,255,255,0.6); font-weight: 600; margin-bottom: 5px; }
+        .ai-metric-value { font-size: 2rem; font-weight: 700; color: #ff9900; line-height: 1; }
+        .ai-metric-desc { font-size: 0.8rem; color: rgba(255,255,255,0.4); margin-top: 5px; }
+
+        /* --- KPI Cards (Business Section) --- */
+        .kpi-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            padding: 20px;
+            height: 100%;
+            border: 1px solid #e5e7eb;
+            transition: transform 0.2s;
+            position: relative;
+            overflow: hidden;
+        }
+        .kpi-card:hover { transform: translateY(-3px); box-shadow: 0 10px 20px rgba(0,0,0,0.05); }
+        .kpi-card::before {
+            content: ''; position: absolute; left: 0; top: 0; bottom: 0; width: 4px;
+            background: var(--amazon-light);
+        }
+        .kpi-card.blue::before { background: #3b82f6; }
+        .kpi-card.yellow::before { background: #f59e0b; }
+        .kpi-card.green::before { background: #10b981; }
+        .kpi-card.red::before { background: #ef4444; }
+
+        .kpi-value { font-size: 1.6rem; font-weight: 700; color: var(--amazon-dark); margin: 5px 0 0 0; }
+        .kpi-label { font-size: 0.85rem; color: var(--text-sub); font-weight: 500; }
+        .kpi-icon { float: right; font-size: 1.5rem; opacity: 0.2; }
+
+        /* --- Charts --- */
+        .chart-card {
+            background: var(--card-bg);
+            border-radius: var(--radius);
+            border: 1px solid #e5e7eb;
+            padding: 5px;
+            height: 100%;
+        }
+        .chart-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #f3f4f6;
+            font-weight: 600;
+            color: var(--amazon-dark);
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .chart-content { padding: 20px; text-align: center; }
+        .chart-img {
+            max-width: 100%; height: auto; max-height: 320px;
+            border-radius: 8px; object-fit: contain;
+        }
+        .chart-note {
+            margin-top: 15px; font-size: 0.8rem; color: var(--text-sub);
+            background: #f9fafb; padding: 8px; border-radius: 6px;
+        }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+  <div class="container-fluid px-lg-5">
+    <a class="navbar-brand" href="#">
+        <i class="fa-solid fa-chart-line text-warning me-2"></i>AMAZON <span class="fw-light">ANALYTICS</span>
+    </a>
+    <div class="d-flex align-items-center gap-3">
+        <div class="text-white-50 small d-none d-md-block">
+            <i class="fa-regular fa-clock me-1"></i> Cập nhật: {{ stats.model.last_updated }}
+        </div>
+        <a href="/" class="btn btn-sm btn-outline-light rounded-pill px-3">
+            <i class="fa-solid fa-home me-1"></i> Trang chủ
+        </a>
+    </div>
+  </div>
+</nav>
+
+<div class="container-fluid px-lg-5 py-4 fade-in">
+
+    <div class="d-flex justify-content-between align-items-end mb-4">
+        <div>
+            <h4 class="fw-bold text-dark mb-1">Dashboard Quản Trị</h4>
+            <p class="text-muted small mb-0">Theo dõi hiệu suất mô hình gợi ý và thống kê dữ liệu hệ thống.</p>
+        </div>
+        <button class="btn btn-dark btn-sm rounded-pill shadow-sm" onclick="alert('Hãy chạy file visualization.py và advanced_hybrid.py để cập nhật số liệu mới nhất!')">
+            <i class="fa-solid fa-rotate me-1"></i> Refresh Data
+        </button>
+    </div>
+
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="ai-card p-4">
+                <div class="d-flex justify-content-between align-items-center mb-4 border-bottom border-secondary border-opacity-25 pb-3">
+                    <h5 class="mb-0 fw-bold"><i class="fa-solid fa-brain me-2 text-warning"></i>Đánh Giá Mô Hình (Collaborative Filtering)</h5>
+                    <span class="badge bg-warning text-dark"><i class="fa-solid fa-check-circle me-1"></i>Active</span>
+                </div>
+
+                <div class="row text-center divide-light">
+                    <div class="col-md-3 col-6 border-end border-secondary border-opacity-25 mb-3 mb-md-0">
+                        <div class="ai-metric-label">Sai số RMSE</div>
+                        <div class="ai-metric-value">{{ stats.model.rmse }}</div>
+                        <div class="ai-metric-desc"><i class="fa-solid fa-arrow-down me-1"></i>Càng thấp càng tốt (&lt;1.2)</div>
+                    </div>
+                    <div class="col-md-3 col-6 border-end-md border-secondary border-opacity-25 mb-3 mb-md-0">
+                        <div class="ai-metric-label">Sai số MAE</div>
+                        <div class="ai-metric-value">{{ stats.model.mae }}</div>
+                        <div class="ai-metric-desc">Sai lệch trung bình (sao)</div>
+                    </div>
+                    <div class="col-md-3 col-6 border-end border-secondary border-opacity-25">
+                        <div class="ai-metric-label">Precision@10</div>
+                        <div class="ai-metric-value">{{ stats.model.precision }}</div>
+                        <div class="ai-metric-desc">Tỉ lệ gợi ý chính xác</div>
+                    </div>
+                    <div class="col-md-3 col-6">
+                        <div class="ai-metric-label">Recall@10</div>
+                        <div class="ai-metric-value">{{ stats.model.recall }}</div>
+                        <div class="ai-metric-desc">Độ phủ sản phẩm</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <h6 class="text-uppercase text-muted fw-bold small mb-3 ls-1">Tổng quan dữ liệu</h6>
+    <div class="row g-4 mb-5">
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card blue">
+                <i class="fa-solid fa-box kpi-icon text-primary"></i>
+                <div class="kpi-label">Tổng sản phẩm</div>
+                <div class="kpi-value">{{ stats.total_products }}</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card green">
+                <i class="fa-solid fa-comments kpi-icon text-success"></i>
+                <div class="kpi-label">Tổng đánh giá</div>
+                <div class="kpi-value">{{ stats.total_reviews }}</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card yellow">
+                <i class="fa-solid fa-star kpi-icon text-warning"></i>
+                <div class="kpi-label">Điểm TB</div>
+                <div class="kpi-value">{{ stats.avg_rating }}/5</div>
+            </div>
+        </div>
+        <div class="col-xl-3 col-md-6">
+            <div class="kpi-card red">
+                <i class="fa-solid fa-layer-group kpi-icon text-danger"></i>
+                <div class="kpi-label">Top Ngành hàng</div>
+                <div class="kpi-value" style="font-size: 1.3rem; margin-top: 8px">{{ stats.top_category }}</div>
+            </div>
+        </div>
+    </div>
+
+    <h6 class="text-uppercase text-muted fw-bold small mb-3 ls-1">Trực quan hóa dữ liệu</h6>
+    <div class="row g-4">
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span><i class="fa-solid fa-chart-simple me-2 text-primary"></i>Phân bố điểm đánh giá</span>
+                </div>
+                <div class="chart-content">
+                    <img src="{{ url_for('static', filename='images/rating_dist.png') }}"
+                         onerror="this.src='https://placehold.co/600x350?text=Chưa+chạy+visualization.py'"
+                         class="chart-img" alt="Rating Chart">
+                    <div class="chart-note">
+                        Biểu đồ cho thấy xu hướng đánh giá của người dùng (tập trung vào tích cực hay tiêu cực).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span><i class="fa-solid fa-crown me-2 text-warning"></i>Sản phẩm phổ biến nhất</span>
+                </div>
+                <div class="chart-content">
+                    <img src="{{ url_for('static', filename='images/top_products.png') }}"
+                         onerror="this.src='https://placehold.co/600x350?text=Chưa+chạy+visualization.py'"
+                         class="chart-img" alt="Top Products Chart">
+                    <div class="chart-note">
+                        Top 10 sản phẩm có số lượng tương tác (review) cao nhất hệ thống.
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span><i class="fa-solid fa-tags me-2 text-success"></i>Phân khúc giá</span>
+                </div>
+                <div class="chart-content">
+                    <img src="{{ url_for('static', filename='images/price_dist.png') }}"
+                         onerror="this.src='https://placehold.co/600x350?text=Chưa+chạy+visualization.py'"
+                         class="chart-img" alt="Price Chart">
+                    <div class="chart-note">
+                        Phân bổ giá sản phẩm, giúp nhận diện phân khúc giá chủ đạo (giá rẻ hay cao cấp).
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-lg-6">
+            <div class="chart-card">
+                <div class="chart-header">
+                    <span><i class="fa-solid fa-border-all me-2 text-info"></i>Tương quan dữ liệu</span>
+                </div>
+                <div class="chart-content">
+                    <img src="{{ url_for('static', filename='images/heatmap.png') }}"
+                         onerror="this.style.display='none'; this.parentElement.innerHTML+='<div class=\'py-5 text-muted\'><i class=\'fa-solid fa-chart-pie display-4 mb-3\'></i><br>Chưa tạo biểu đồ Heatmap</div>'"
+                         class="chart-img" alt="Heatmap">
+                    <div class="chart-note">
+                        Ma trận tương quan giữa Giá, Rating và Số lượng Review.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

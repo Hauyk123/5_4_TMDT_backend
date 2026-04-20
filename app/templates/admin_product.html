@@ -1,0 +1,81 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <title>Quản lý Sản phẩm - Admin</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+</head>
+<body class="bg-light">
+    <div class="container-fluid py-4">
+        <div class="d-flex justify-content-between align-items-center mb-4">
+            <h2 class="fw-bold text-dark">📦 Quản lý Sản phẩm</h2>
+            <button class="btn btn-primary fw-bold shadow-sm" data-bs-toggle="modal" data-bs-target="#addProductModal">
+                <i class="bi bi-plus-lg"></i> Thêm sản phẩm
+            </button>
+        </div>
+
+        <div class="card border-0 shadow-sm">
+            <div class="table-responsive">
+                <table class="table table-hover align-middle mb-0">
+                    <thead class="bg-dark text-white">
+                        <tr>
+                            <th>ID</th>
+                            <th>Tên sản phẩm</th>
+                            <th>Danh mục</th>
+                            <th>Giá bán</th>
+                            <th>Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in products %}
+                        <tr>
+                            <td>#{{ p.id }}</td>
+                            <td class="fw-bold">{{ p.name }}</td>
+                            <td><span class="badge bg-secondary">{{ p.category_name }}</span></td>
+                            <td class="text-danger fw-bold">{{ "{:,.0f}".format(p.price) }} ₫</td>
+                            <td>
+                                <button class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil"></i></button>
+                                <button onclick="deleteProduct({{ p.id }})" class="btn btn-sm btn-outline-danger"><i class="bi bi-trash"></i></button>
+                            </td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="addProductModal" tabindex="-1">
+        <div class="modal-dialog">
+            <form action="{{ url_for('admin.add_product') }}" method="POST" class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Thêm sản phẩm mới</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <div class="mb-3"><label class="form-label">Tên sản phẩm</label><input type="text" name="name" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">ID Danh mục</label><input type="number" name="category_id" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Thương hiệu</label><input type="text" name="brand" class="form-control"></div>
+                    <div class="mb-3"><label class="form-label">Giá (VNĐ)</label><input type="number" name="price" class="form-control" required></div>
+                    <div class="mb-3"><label class="form-label">Mô tả</label><textarea name="description" class="form-control" rows="3"></textarea></div>
+                </div>
+                <div class="modal-footer">
+                    <button type="submit" class="btn btn-primary w-100 fw-bold">Lưu sản phẩm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        function deleteProduct(id) {
+            if(confirm('Xác nhận xóa sản phẩm này?')) {
+                fetch(`/api/admin/products/${id}`, { method: 'DELETE' })
+                .then(res => res.json())
+                .then(data => { alert(data.message); location.reload(); });
+            }
+        }
+    </script>
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>
