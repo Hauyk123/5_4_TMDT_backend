@@ -1,0 +1,210 @@
+{% extends 'base.html' %}
+
+{% block title %}Đơn Hàng Của Tôi{% endblock %}
+
+{% block content %}
+<div class="container py-2" style="max-width: 900px;">
+
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <h3 class="fw-bold mb-0 text-dark"><i class="bi bi-box-seam text-primary me-2"></i> Đơn hàng của tôi</h3>
+
+        <form action="{{ url_for('order.view_orders') }}" method="GET" class="m-0">
+            <select name="status" class="form-select shadow-sm fw-medium border-secondary-subtle" style="width: 240px; cursor: pointer;" onchange="this.form.submit()">
+                <option value="">✨ Tất cả trạng thái đơn</option>
+                <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>⏳ Chờ xử lý</option>
+                <option value="PROCESSING" {% if status_filter == 'PROCESSING' %}selected{% endif %}>📦 Đang chuẩn bị</option>
+                <option value="SHIPPING" {% if status_filter == 'SHIPPING' %}selected{% endif %}>🚚 Đang giao hàng</option>
+                <option value="DELIVERED" {% if status_filter == 'DELIVERED' %}selected{% endif %}>✅ Đã giao hàng</option>
+                <option value="RETURN_REQUESTED" {% if status_filter == 'RETURN_REQUESTED' %}selected{% endif %}>🔄 Chờ duyệt trả hàng</option>
+                <option value="RETURNED" {% if status_filter == 'RETURNED' %}selected{% endif %}>↩️ Đã trả hàng</option>
+                <option value="REFUNDED" {% if status_filter == 'REFUNDED' %}selected{% endif %}>💵 Đã hoàn tiền</option>
+                <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>❌ Đã hủy đơn</option>
+            </select>
+        </form>
+    </div>
+
+    {% if orders %}
+        <div class="d-flex flex-column gap-4">
+            {% for order in orders %}
+            <div class="card border-0 shadow-sm rounded-4 overflow-hidden">
+                <div class="card-header bg-white border-bottom d-flex flex-column flex-md-row justify-content-between align-items-md-center py-3 px-4 gap-2">
+                    <div>
+                        <span class="text-muted small">Mã đơn hàng:</span>
+                        <strong class="text-dark fs-6">#{{ order.order_id }}</strong>
+                        <span class="mx-2 text-muted d-none d-md-inline">|</span>
+                        <span class="text-muted small d-block d-md-inline">Ngày đặt: {{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else 'Vừa xong' }}</span>
+                    </div>
+                    <div>
+                        {% if order.status == 'PENDING' %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-clock-history me-1"></i> Chờ xử lý</span>
+                        {% elif order.status == 'PROCESSING' %}
+                            <span class="badge bg-info text-dark rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-gear-fill me-1"></i> Đang chuẩn bị</span>
+                        {% elif order.status == 'SHIPPING' %}
+                            <span class="badge bg-primary rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-truck me-1"></i> Đang giao hàng</span>
+                        {% elif order.status == 'DELIVERED' %}
+                            <span class="badge bg-success rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-check-circle-fill me-1"></i> Đã giao hàng</span>
+                        {% elif order.status == 'RETURN_REQUESTED' %}
+                            <span class="badge bg-warning text-dark rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-arrow-return-left me-1"></i> Chờ duyệt trả hàng</span>
+                        {% elif order.status == 'RETURNED' %}
+                            <span class="badge bg-secondary rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-box-arrow-in-left me-1"></i> Đã trả hàng</span>
+                        {% elif order.status == 'REFUNDED' %}
+                            <span class="badge bg-success border border-success rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-cash-coin me-1"></i> Đã hoàn tiền</span>
+                        {% else %}
+                            <span class="badge bg-danger rounded-pill px-3 py-2 fw-semibold"><i class="bi bi-x-circle-fill me-1"></i> Đã hủy</span>
+                        {% endif %}
+                    </div>
+                </div>
+
+                <div class="card-body p-4">
+                    <div class="row g-3 mb-4">
+                        <div class="col-md-8">
+                            <div class="mb-2">
+                                <i class="bi bi-geo-alt text-danger me-2"></i><span class="fw-semibold">Địa chỉ nhận hàng:</span>
+                                <div class="text-muted small ps-4 mt-1">{{ order.shipping_address }}</div>
+                            </div>
+                            <div>
+                                <i class="bi bi-credit-card text-success me-2"></i><span class="fw-semibold">Thanh toán:</span>
+                                <span class="badge bg-light text-dark border ms-1">{{ order.payment_method }}</span>
+                            </div>
+                        </div>
+                        <div class="col-md-4 text-md-end d-flex flex-column justify-content-end">
+                            <span class="text-muted small">Tổng số tiền thanh toán:</span>
+                            <span class="fs-3 fw-bold text-danger mt-1">${{ "{:,.2f}".format(order.total_amount) }}</span>
+                        </div>
+                    </div>
+
+                    {% if order.order_items %}
+                    <div class="border-top pt-3">
+                        <h6 class="fw-bold small mb-3 text-secondary text-uppercase">Sản phẩm đã đặt</h6>
+                        <div class="d-flex flex-column gap-3">
+                            {% for item in order.order_items %}
+                            <div class="d-flex align-items-center bg-light-subtle p-2 rounded border">
+                                <img src="{{ item.image_url }}" alt="Product" class="border rounded bg-white me-3" style="width: 60px; height: 60px; object-fit: contain; padding: 2px;">
+
+                                <div class="flex-grow-1">
+                                    <a href="/product/{{ item.product_id }}" class="text-dark text-decoration-none fw-bold d-block mb-1 hover-primary" style="font-size: 0.95rem;">
+                                        {{ item.product_name }}
+                                    </a>
+                                    <span class="text-muted small">Số lượng: <span class="fw-semibold text-dark">{{ item.quantity }}</span> | Đơn giá: <span class="fw-semibold text-danger">${{ "{:,.2f}".format(item.price) }}</span></span>
+                                </div>
+
+                                {% if order.status == 'DELIVERED' %}
+                                <div class="ms-3">
+                                    <a href="/product/{{ item.product_id }}#reviewSection" class="btn btn-sm btn-outline-warning text-dark fw-medium rounded-pill px-3 shadow-sm">
+                                        <i class="bi bi-star-fill text-warning me-1"></i> Đánh giá
+                                    </a>
+                                </div>
+                                {% endif %}
+                            </div>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+
+                <div class="card-footer bg-light border-top py-3 px-4 d-flex justify-content-end gap-2 align-items-center">
+                    {% if order.status == 'PENDING' %}
+                        <form action="{{ url_for('order.customer_cancel_order', order_id=order.order_id) }}" method="POST" class="m-0">
+                            <button type="submit" class="btn btn-sm btn-outline-danger px-4 py-2 rounded-pill fw-medium" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
+                                Hủy đơn
+                            </button>
+                        </form>
+
+                        {% if order.payment_method == 'MOMO' %}
+                            <a href="{{ url_for('order.pay_with_momo', order_id=order.order_id) }}" class="btn btn-sm text-white px-4 py-2 rounded-pill fw-medium" style="background-color: #a50064;">
+                                <i class="bi bi-wallet2 me-1"></i> Thanh toán MoMo
+                            </a>
+                        {% endif %}
+
+                    {% elif order.status == 'DELIVERED' %}
+                        <button type="button" class="btn btn-sm btn-outline-dark px-4 py-2 rounded-pill fw-medium shadow-sm" onclick="openReturnModal('{{ order.order_id }}')">
+                            <i class="bi bi-arrow-return-left me-1"></i> Yêu cầu Trả hàng
+                        </button>
+                    {% else %}
+                        <span class="text-muted small"><i class="bi bi-info-circle me-1"></i>Không có thao tác khả dụng</span>
+                    {% endif %}
+                </div>
+            </div>
+            {% endfor %}
+        </div>
+
+        {% if total_pages and total_pages > 1 %}
+        <nav aria-label="Page navigation" class="mt-5">
+            <ul class="pagination justify-content-center mb-0">
+                <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                    <a class="page-link shadow-sm rounded-start-pill px-3" href="{{ url_for('order.view_orders', page=current_page-1, status=status_filter) }}">Trước</a>
+                </li>
+                {% for p in page_range %}
+                    <li class="page-item {% if p == current_page %}active{% endif %}">
+                        <a class="page-link shadow-sm" href="{{ url_for('order.view_orders', page=p, status=status_filter) }}">{{ p }}</a>
+                    </li>
+                {% endfor %}
+                <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                    <a class="page-link shadow-sm rounded-end-pill px-3" href="{{ url_for('order.view_orders', page=current_page+1, status=status_filter) }}">Sau</a>
+                </li>
+            </ul>
+        </nav>
+        {% endif %}
+
+    {% else %}
+        <div class="text-center py-5 bg-white rounded-4 shadow-sm border">
+            <span class="fs-1 opacity-25">📦</span>
+            <h4 class="text-muted mt-3 fw-bold">Không có đơn hàng nào</h4>
+            <p class="text-muted small">Không tìm thấy đơn hàng nào ở trạng thái đã chọn.</p>
+            <a href="{{ url_for('order.view_orders') }}" class="btn btn-warning rounded-pill px-4 py-2 mt-2 fw-bold shadow-sm">Xem tất cả đơn</a>
+        </div>
+    {% endif %}
+</div>
+
+<div class="modal fade" id="returnRequestModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content rounded-4 border-0 shadow">
+            <div class="modal-header border-bottom-0 pb-0">
+                <h5 class="fw-bold text-dark mb-0"><i class="bi bi-shield-exclamation text-warning me-2"></i>Yêu cầu trả hàng / Hoàn tiền</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form id="returnForm" method="POST" enctype="multipart/form-data">
+                <div class="modal-body py-4">
+                    <p class="text-muted small">Vui lòng cung cấp lý do chi tiết và hình ảnh/video sản phẩm gia dụng bị lỗi để bộ phận thẩm định xử lý nhanh nhất.</p>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Lý do trả hàng *</label>
+                        <select class="form-select shadow-sm" name="reason" required>
+                            <option value="Hàng bị vỡ/móp méo do vận chuyển">📦 Hàng bị vỡ/móp méo do vận chuyển</option>
+                            <option value="Sản phẩm lỗi kỹ thuật, không hoạt động">🔌 Sản phẩm lỗi kỹ thuật, không hoạt động</option>
+                            <option value="Giao sai mẫu mã/sai sản phẩm">🔄 Giao sai mẫu mã/sai sản phẩm</option>
+                            <option value="Khác (Ghi rõ ở phần mô tả)">📝 Lý do khác</option>
+                        </select>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Mô tả chi tiết tình trạng *</label>
+                        <textarea class="form-control shadow-sm" name="description" rows="3" placeholder="Ví dụ: Tủ lạnh không lạnh, quạt tản nhiệt kêu to..." required></textarea>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-secondary">Tải lên minh chứng (Ảnh hoặc Video) *</label>
+                        <input type="file" class="form-control shadow-sm" name="proof_file" accept="image/*,video/*" required>
+                        <div class="form-text small text-muted" style="font-size: 0.75rem;">Hệ thống chấp nhận các file ảnh (png, jpg) hoặc video ngắn dưới 20MB.</div>
+                    </div>
+                </div>
+                <div class="modal-footer border-top-0 pt-0">
+                    <button type="button" class="btn btn-sm btn-light rounded-pill px-3" data-bs-dismiss="modal">Hủy bỏ</button>
+                    <button type="submit" class="btn btn-sm btn-danger rounded-pill px-4 fw-medium shadow-sm">Gửi yêu cầu</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    // Hàm đóng gói mã đơn hàng động vào form hành động trước khi hiển thị Pop-up
+    function openReturnModal(orderId) {
+        document.getElementById('returnForm').action = '/order/' + orderId + '/request_return';
+        const returnModal = new bootstrap.Modal(document.getElementById('returnRequestModal'));
+        returnModal.show();
+    }
+</script>
+{% endblock %}

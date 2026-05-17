@@ -1,0 +1,230 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Tổng quan - Admin Dashboard{% endblock %}
+{% block page_title %}Bảng điều khiển (Dashboard){% endblock %}
+
+{% block content %}
+<div class="row g-4 mb-4">
+    <div class="col-md-4">
+        <div class="stat-card d-flex align-items-center p-3 bg-white rounded-4 shadow-sm border-0">
+            <div class="stat-icon bg-success-subtle text-success me-4 p-3 rounded-circle fs-3"><i class="bi bi-cash-coin"></i></div>
+            <div>
+                <div class="text-muted fw-semibold small mb-1">TỔNG DOANH THU</div>
+                <h3 class="fw-bold text-dark mb-0">${{ "{:,.2f}".format(revenue) if revenue else '0.00' }}</h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card d-flex align-items-center p-3 bg-white rounded-4 shadow-sm border-0">
+            <div class="stat-icon bg-primary-subtle text-primary me-4 p-3 rounded-circle fs-3"><i class="bi bi-box-seam"></i></div>
+            <div>
+                <div class="text-muted fw-semibold small mb-1">TỔNG SỐ ĐƠN HÀNG</div>
+                <h3 class="fw-bold text-dark mb-0">{{ total_orders or 0 }} <span class="fs-6 fw-normal text-muted">đơn</span></h3>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card d-flex align-items-center p-3 bg-white rounded-4 shadow-sm border-0">
+            <div class="stat-icon bg-warning-subtle text-warning me-4 p-3 rounded-circle fs-3"><i class="bi bi-people"></i></div>
+            <div>
+                <div class="text-muted fw-semibold small mb-1">TÀI KHOẢN KHÁCH HÀNG</div>
+                <h3 class="fw-bold text-dark mb-0">{{ total_users or 0 }} <span class="fs-6 fw-normal text-muted">người</span></h3>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row g-4 mb-4">
+    <div class="col-lg-8">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-graph-up-arrow text-success me-2"></i>Doanh thu 7 ngày gần nhất</h6>
+            <div style="height: 300px;">
+                <canvas id="revenueChart"></canvas>
+            </div>
+        </div>
+    </div>
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4 h-100">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pie-chart-fill text-primary me-2"></i>Tỉ lệ Trạng thái Đơn hàng</h6>
+            <div style="height: 300px; display: flex; justify-content: center;">
+                <canvas id="orderStatusChart"></canvas>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h5 class="fw-bold text-dark mb-0">Quản lý Đơn hàng</h5>
+        <span class="badge bg-light text-dark border px-3 py-2">Trang {{ current_page }} / {{ total_pages }}</span>
+    </div>
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light">
+                <tr>
+                    <th>Mã Đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Ngày đặt</th>
+                    <th>Tổng tiền (USD)</th>
+                    <th>Thanh toán</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center">Thao tác</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in recent_orders %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ order.order_id }}</td>
+                    <td class="fw-medium">{{ order.receiver_name }}</td>
+                    <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '' }}</td>
+                    <td class="fw-bold text-danger">${{ "{:,.2f}".format(order.total_amount) }}</td>
+                    <td><span class="badge bg-light text-dark border">{{ order.payment_method }}</span></td>
+
+                    <td>
+                        {% if order.status == 'DELIVERED' %}
+                            <span class="badge bg-success">Đã giao</span>
+                        {% elif order.status == 'SHIPPING' %}
+                            <span class="badge bg-primary">Đang giao</span>
+                        {% elif order.status == 'PROCESSING' %}
+                            <span class="badge bg-info text-dark">Đang chuẩn bị</span>
+                        {% elif order.status == 'CANCELLED' %}
+                            <span class="badge bg-danger">Đã hủy</span>
+                        {% elif order.status == 'RETURN_REQUESTED' %}
+                            <span class="badge bg-warning text-dark">Khách yêu cầu Trả hàng</span>
+                        {% elif order.status == 'RETURNED' %}
+                            <span class="badge bg-secondary">Đã hoàn trả</span>
+                        {% elif order.status == 'REFUNDED' %}
+                            <span class="badge bg-success text-white">Đã hoàn tiền</span>
+                        {% else %}
+                            <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                        {% endif %}
+                    </td>
+
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-1">
+                            {% if order.status == 'PENDING' or order.status == 'PROCESSING' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="SHIPPING">
+                                    <input type="hidden" name="redirect_to" value="admin.dashboard">
+                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill shadow-sm" onclick="return confirm('Xác nhận chuyển đơn #{{ order.order_id }} sang Đang giao?');">
+                                        <i class="bi bi-truck me-1"></i> Giao
+                                    </button>
+                                </form>
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="CANCELLED">
+                                    <input type="hidden" name="redirect_to" value="admin.dashboard">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-2 rounded-pill shadow-sm" onclick="return confirm('Xác nhận HỦY đơn hàng #{{ order.order_id }} này?');">
+                                        <i class="bi bi-x-circle"></i> Hủy
+                                    </button>
+                                </form>
+                            {% elif order.status == 'SHIPPING' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="DELIVERED">
+                                    <input type="hidden" name="redirect_to" value="admin.dashboard">
+                                    <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill shadow-sm" title="Đánh dấu đã giao xong">
+                                        <i class="bi bi-box-seam me-1"></i> Đã giao
+                                    </button>
+                                </form>
+                            {% elif order.status == 'RETURN_REQUESTED' %}
+                                <form action="{{ url_for('admin.admin_approve_return', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <button type="submit" class="btn btn-sm btn-info text-white px-3 rounded-pill shadow-sm" onclick="return confirm('Xác nhận nhận lại hàng và hoàn kho cho đơn #{{ order.order_id }}?');">
+                                        <i class="bi bi-arrow-return-left me-1"></i> Nhận trả hàng
+                                    </button>
+                                </form>
+                            {% elif order.status == 'RETURNED' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="REFUNDED">
+                                    <input type="hidden" name="redirect_to" value="admin.dashboard">
+                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill shadow-sm" onclick="return confirm('Xác nhận đã chuyển khoản HOÀN TIỀN (Refund) cho khách?');">
+                                        <i class="bi bi-cash-coin me-1"></i> Hoàn tiền
+                                    </button>
+                                </form>
+                            {% else %}
+                                <button class="btn btn-sm btn-secondary px-3 rounded-pill shadow-sm" disabled><i class="bi bi-check2"></i> Đã xử lý</button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                {% if not recent_orders %}
+                <tr><td colspan="7" class="text-center py-4 text-muted">Chưa có dữ liệu đơn hàng.</td></tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.dashboard', page=current_page-1) }}">Trước</a>
+            </li>
+            {% for p in page_range %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link shadow-sm" href="{{ url_for('admin.dashboard', page=p) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.dashboard', page=current_page+1) }}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script>
+    document.addEventListener("DOMContentLoaded", function() {
+        // Lấy dữ liệu từ Backend đẩy xuống (Nếu chưa có, dùng mảng rỗng tạm thời)
+        const revenueLabels = {{ chart_revenue_labels | default([]) | tojson }};
+        const revenueData = {{ chart_revenue_data | default([]) | tojson }};
+        const statusLabels = {{ chart_status_labels | default([]) | tojson }};
+        const statusData = {{ chart_status_data | default([]) | tojson }};
+
+        // 1. BIỂU ĐỒ ĐƯỜNG: DOANH THU 7 NGÀY
+        const ctxRev = document.getElementById('revenueChart').getContext('2d');
+        new Chart(ctxRev, {
+            type: 'line',
+            data: {
+                labels: revenueLabels.length ? revenueLabels : ['Chưa có dữ liệu'],
+                datasets: [{
+                    label: 'Doanh thu (USD)',
+                    data: revenueData.length ? revenueData : [0],
+                    borderColor: '#198754',
+                    backgroundColor: 'rgba(25, 135, 84, 0.2)',
+                    borderWidth: 2,
+                    tension: 0.3,
+                    fill: true
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } },
+                scales: { y: { beginAtZero: true } }
+            }
+        });
+
+        // 2. BIỂU ĐỒ TRÒN (DOUGHNUT): TRẠNG THÁI ĐƠN HÀNG
+        const ctxStatus = document.getElementById('orderStatusChart').getContext('2d');
+        new Chart(ctxStatus, {
+            type: 'doughnut',
+            data: {
+                labels: statusLabels.length ? statusLabels : ['Chưa có đơn'],
+                datasets: [{
+                    data: statusData.length ? statusData : [1],
+                    backgroundColor: ['#0dcaf0', '#0d6efd', '#198754', '#ffc107', '#6c757d', '#dc3545'],
+                    borderWidth: 1
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { position: 'bottom', labels: { boxWidth: 12 } }
+                }
+            }
+        });
+    });
+</script>
+{% endblock %}

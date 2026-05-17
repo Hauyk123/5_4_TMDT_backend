@@ -1,0 +1,162 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Chi tiết Hóa đơn #{{ order.order_id }} - Admin{% endblock %}
+{% block page_title %}Chi tiết Đơn hàng #{{ order.order_id }}{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+    <div class="col-lg-4">
+        <div class="card border-0 shadow-sm rounded-4 bg-white mb-4">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-person-lines-fill text-primary me-2"></i>Thông tin Giao hàng</h6>
+            </div>
+            <div class="card-body">
+                <p class="mb-2"><span class="text-muted small d-block">Tên người nhận:</span> <strong class="text-dark">{{ order.receiver_name }}</strong></p>
+                <p class="mb-2"><span class="text-muted small d-block">Số điện thoại:</span> <strong class="text-dark">{{ order.receiver_phone }}</strong></p>
+                <p class="mb-0"><span class="text-muted small d-block">Địa chỉ nhận hàng:</span> <span class="text-dark">{{ order.shipping_address }}</span></p>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-white border-bottom py-3">
+                <h6 class="fw-bold mb-0"><i class="bi bi-credit-card-2-front text-success me-2"></i>Thanh toán & Trạng thái</h6>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Phương thức:</span>
+                    <span class="badge bg-light text-dark border">{{ order.payment_method }}</span>
+                </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted small">Thời gian đặt:</span>
+                    <strong class="small text-dark">{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '' }}</strong>
+                </div>
+                <div class="d-flex justify-content-between mt-3 pt-3 border-top align-items-center">
+                    <span class="text-muted small">Trạng thái hiện tại:</span>
+                    {% if order.status == 'DELIVERED' %}
+                        <span class="badge bg-success">Đã giao</span>
+                    {% elif order.status == 'SHIPPING' %}
+                        <span class="badge bg-primary">Đang giao</span>
+                    {% elif order.status == 'PROCESSING' %}
+                        <span class="badge bg-info text-dark">Đang chuẩn bị</span>
+                    {% elif order.status == 'RETURN_REQUESTED' %}
+                        <span class="badge bg-warning text-dark">Yêu cầu Trả hàng</span>
+                    {% elif order.status == 'RETURNED' %}
+                        <span class="badge bg-secondary">Đã hoàn trả</span>
+                    {% elif order.status == 'REFUNDED' %}
+                        <span class="badge bg-success text-white"><i class="bi bi-cash me-1"></i>Đã hoàn tiền</span>
+                    {% elif order.status == 'CANCELLED' %}
+                        <span class="badge bg-danger">Đã hủy</span>
+                    {% else %}
+                        <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+
+        {% if order.status == 'RETURN_REQUESTED' and return_proof %}
+        <div class="card border border-warning shadow-sm rounded-4 mb-4" style="background-color: #fffdf6;">
+            <div class="card-header bg-warning bg-opacity-10 border-bottom border-warning py-3">
+                <h6 class="fw-bold text-warning-emphasis mb-0">
+                    <i class="bi bi-shield-exclamation text-warning fs-5 me-2"></i>Hồ sơ Minh chứng Hoàn hàng / Trả tiền
+                </h6>
+            </div>
+            <div class="card-body p-4 text-dark">
+                <div class="row g-4">
+                    <div class="col-md-7">
+                        <div class="mb-3">
+                            <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Lý do từ khách:</label>
+                            <div class="fw-bold text-dark fs-6">{{ return_proof.reason }}</div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Mô tả tình trạng chi tiết:</label>
+                            <div class="p-3 bg-white border rounded-3 text-secondary small font-monospace shadow-sm">
+                                {{ return_proof.description }}
+                            </div>
+                        </div>
+                        <div>
+                            <label class="text-secondary small fw-bold text-uppercase d-block mb-1">Thời gian gửi yêu cầu:</label>
+                            <span class="badge bg-dark px-3 py-2 rounded-pill"><i class="bi bi-clock me-1"></i> {{ return_proof.timestamp }}</span>
+                        </div>
+                    </div>
+
+                    <div class="col-md-5 border-start border-light-subtle">
+                        <label class="text-secondary small fw-bold text-uppercase d-block mb-2">Hình ảnh/Video bằng chứng:</label>
+                        <div class="text-center p-2 border rounded-3 bg-white shadow-sm">
+                            {% if return_proof.file_type == 'video' %}
+                                <video src="{{ return_proof.proof_url }}" controls class="rounded w-100" style="max-height: 220px;"></video>
+                            {% else %}
+                                <img src="{{ return_proof.proof_url }}" class="rounded img-fluid img-thumbnail" style="max-height: 220px; object-fit: contain; cursor: pointer;" onclick="window.open(this.src)" title="Xem ảnh kích thước gốc">
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="mt-4 pt-3 border-top d-flex gap-2 justify-content-end">
+                    <form action="{{ url_for('admin.admin_approve_return', order_id=order.order_id) }}" method="POST" class="m-0">
+                        <button type="submit" class="btn btn-success px-4 rounded-pill fw-bold shadow-sm" onclick="return confirm('Duyệt hồ sơ chứng cứ, xác nhận nhận lại hàng và hoàn kho tự động cho đơn #{{ order.order_id }}?');">
+                            <i class="bi bi-check-lg me-1"></i> Chấp nhận nhận trả hàng
+                        </button>
+                    </form>
+                    <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="m-0">
+                        <input type="hidden" name="new_status" value="DELIVERED">
+                        <input type="hidden" name="redirect_to" value="admin.order_detail">
+                        <button type="submit" class="btn btn-outline-danger px-4 rounded-pill shadow-sm" onclick="return confirm('Từ chối bằng chứng, đưa đơn hàng quay về trạng thái Đã giao thành công?');">
+                            Từ chối / Bác bỏ yêu cầu
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white">
+            <div class="card-header bg-white border-bottom py-3 d-flex justify-content-between align-items-center">
+                <h6 class="fw-bold mb-0"><i class="bi bi-box2 text-warning me-2"></i>Danh sách Sản phẩm</h6>
+                <a href="{{ url_for('admin.manage_orders') }}" class="btn btn-sm btn-outline-secondary">Quay lại</a>
+            </div>
+            <div class="card-body p-0">
+                <div class="table-responsive">
+                    <table class="table table-borderless align-middle mb-0">
+                        <thead class="table-light text-secondary border-bottom">
+                            <tr>
+                                <th class="ps-4">Sản phẩm</th>
+                                <th class="text-center">Đơn giá</th>
+                                <th class="text-center">Số lượng</th>
+                                <th class="text-end pe-4">Thành tiền</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for item in items %}
+                            <tr class="border-bottom">
+                                <td class="ps-4 py-3">
+                                    <div class="d-flex align-items-center">
+                                        <img src="{{ item.image_url }}" alt="IMG" class="rounded border me-3" style="width: 50px; height: 50px; object-fit: contain;">
+                                        <div>
+                                            <div class="fw-bold text-dark text-truncate" style="max-width: 250px;">{{ item.name }}</div>
+                                            <small class="text-muted">ID: {{ item.product_id }}</small>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td class="text-center text-muted">${{ "{:,.2f}".format(item.price_at_purchase) }}</td>
+                                <td class="text-center fw-medium">x{{ item.quantity }}</td>
+                                <td class="text-end pe-4 fw-bold text-dark">${{ "{:,.2f}".format(item.price_at_purchase * item.quantity) }}</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+            <div class="card-footer bg-light border-0 py-3 pe-4 text-end rounded-bottom-4">
+                <div class="text-muted small mb-1">Phí vận chuyển: <span class="text-dark fw-medium">${{ "{:,.2f}".format(order.shipping_fee) }}</span></div>
+                {% if order.discount_amount and order.discount_amount > 0 %}
+                    <div class="text-muted small mb-1">Voucher giảm giá: <span class="text-danger fw-medium">-${{ "{:,.2f}".format(order.discount_amount) }}</span></div>
+                {% endif %}
+                <h5 class="fw-bold text-danger mb-0">Tổng cộng: ${{ "{:,.2f}".format(order.total_amount) }}</h5>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,145 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Quản lý Đơn hàng - Admin Dashboard{% endblock %}
+{% block page_title %}Danh sách Đơn hàng{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-1">Tất cả đơn hàng</h5>
+            <p class="text-muted small mb-0">Hệ thống ghi nhận tổng cộng <strong>{{ total_orders }}</strong> giao dịch.</p>
+        </div>
+
+        <form action="{{ url_for('admin.manage_orders') }}" method="GET" class="d-flex gap-2">
+            <select name="status" class="form-select" style="width: 170px;" onchange="this.form.submit()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="PENDING" {% if status_filter == 'PENDING' %}selected{% endif %}>Chờ xử lý</option>
+                <option value="PROCESSING" {% if status_filter == 'PROCESSING' %}selected{% endif %}>Đang chuẩn bị</option>
+                <option value="SHIPPING" {% if status_filter == 'SHIPPING' %}selected{% endif %}>Đang giao</option>
+                <option value="DELIVERED" {% if status_filter == 'DELIVERED' %}selected{% endif %}>Đã giao</option>
+                <option value="RETURN_REQUESTED" {% if status_filter == 'RETURN_REQUESTED' %}selected{% endif %}>Yêu cầu trả hàng</option>
+                <option value="RETURNED" {% if status_filter == 'RETURNED' %}selected{% endif %}>Đã hoàn trả</option>
+                <option value="REFUNDED" {% if status_filter == 'REFUNDED' %}selected{% endif %}>Đã hoàn tiền</option>
+                <option value="CANCELLED" {% if status_filter == 'CANCELLED' %}selected{% endif %}>Đã hủy</option>
+            </select>
+            <div class="input-group" style="width: 250px;">
+                <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Mã đơn, Tên KH...">
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+                <tr style="font-size: 0.9rem;">
+                    <th>Mã Đơn</th>
+                    <th>Khách hàng</th>
+                    <th>Ngày đặt</th>
+                    <th>Tổng tiền (USD)</th>
+                    <th>Trạng thái</th>
+                    <th class="text-center" width="280">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for order in orders %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ order.order_id }}</td>
+                    <td>
+                        <div class="fw-medium text-dark">{{ order.receiver_name }}</div>
+                        <small class="text-muted"><i class="bi bi-credit-card me-1"></i>{{ order.payment_method }}</small>
+                    </td>
+                    <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '' }}</td>
+                    <td class="fw-bold text-danger">${{ "{:,.2f}".format(order.total_amount) }}</td>
+                    <td>
+                        {% if order.status == 'DELIVERED' %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2">Đã giao</span>
+                        {% elif order.status == 'SHIPPING' %}
+                            <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2">Đang giao</span>
+                        {% elif order.status == 'PROCESSING' %}
+                            <span class="badge bg-info-subtle text-info-emphasis border border-info-subtle px-2">Đang chuẩn bị</span>
+                        {% elif order.status == 'CANCELLED' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2">Đã hủy</span>
+                        {% elif order.status == 'RETURN_REQUESTED' %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2">Yêu cầu trả hàng</span>
+                        {% elif order.status == 'RETURNED' %}
+                            <span class="badge bg-secondary-subtle text-secondary border border-secondary-subtle px-2">Đã hoàn kho</span>
+                        {% elif order.status == 'REFUNDED' %}
+                            <span class="badge bg-success text-white border border-success px-2"><i class="bi bi-cash me-1"></i>Đã hoàn tiền</span>
+                        {% else %}
+                            <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2">Chờ duyệt</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-center">
+                        <div class="d-flex justify-content-center gap-1">
+                            <a href="{{ url_for('admin.order_detail', order_id=order.order_id) }}" class="btn btn-sm btn-outline-dark rounded-pill px-2" title="Xem chi tiết & Hồ sơ hoàn hàng">
+                                <i class="bi bi-eye"></i>
+                            </a>
+
+                            {% if order.status == 'PENDING' or order.status == 'PROCESSING' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="SHIPPING">
+                                    <input type="hidden" name="redirect_to" value="admin.manage_orders">
+                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill fw-medium"><i class="bi bi-check2"></i> Duyệt</button>
+                                </form>
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="CANCELLED">
+                                    <input type="hidden" name="redirect_to" value="admin.manage_orders">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger px-2 rounded-pill" onclick="return confirm('Xác nhận HỦY đơn hàng #{{ order.order_id }} này?');"><i class="bi bi-x-circle"></i> Hủy đơn</button>
+                                </form>
+                            {% elif order.status == 'SHIPPING' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="DELIVERED">
+                                    <input type="hidden" name="redirect_to" value="admin.manage_orders">
+                                    <button type="submit" class="btn btn-sm btn-primary px-3 rounded-pill fw-medium"><i class="bi bi-box-seam me-1"></i> Đã giao xong</button>
+                                </form>
+                            {% elif order.status == 'RETURN_REQUESTED' %}
+                                <a href="{{ url_for('admin.order_detail', order_id=order.order_id) }}" class="btn btn-sm btn-warning text-dark px-3 rounded-pill fw-bold">
+                                    <i class="bi bi-shield-exclamation me-1"></i> Kiểm duyệt hồ sơ
+                                </a>
+                            {% elif order.status == 'RETURNED' %}
+                                <form action="{{ url_for('admin.update_order_status', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                    <input type="hidden" name="new_status" value="REFUNDED">
+                                    <input type="hidden" name="redirect_to" value="admin.manage_orders">
+                                    <button type="submit" class="btn btn-sm btn-success px-3 rounded-pill fw-medium" onclick="return confirm('Xác nhận đã chuyển khoản HOÀN TIỀN (Refund) cho khách ở đơn #{{ order.order_id }}?');"><i class="bi bi-cash-coin me-1"></i> Hoàn tiền</button>
+                                </form>
+                            {% else %}
+                                <button class="btn btn-sm btn-light border text-muted px-3 rounded-pill" disabled><i class="bi bi-slash-circle"></i> Không thao tác</button>
+                            {% endif %}
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if not orders %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                        Không tìm thấy đơn hàng nào phù hợp!
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_orders', page=current_page-1, q=search_query, status=status_filter) }}">Trước</a>
+            </li>
+            {% for p in page_range %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link shadow-sm" href="{{ url_for('admin.manage_orders', page=p, q=search_query, status=status_filter) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_orders', page=current_page+1, q=search_query, status=status_filter) }}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

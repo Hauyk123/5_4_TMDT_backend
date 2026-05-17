@@ -1,0 +1,179 @@
+{% extends 'base.html' %}
+
+{% block title %}Giỏ Hàng Của Bạn{% endblock %}
+
+{% block extra_styles %}
+<style>
+    .cart-container { background: white; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); padding: 30px; }
+    .product-thumb { width: 80px; height: 80px; object-fit: contain; border: 1px solid #eee; border-radius: 8px; padding: 5px; background: white; }
+    .price-text { color: #B12704; font-weight: 700; }
+    .summary-box { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 20px; position: sticky; top: 100px; }
+    .btn-checkout { background-color: #ffd814; border: 1px solid #fcd200; font-weight: 600; border-radius: 50px; transition: 0.2s; }
+    .btn-checkout:hover:not(.disabled) { background-color: #f7ca00; }
+    .btn-checkout.disabled { opacity: 0.6; cursor: not-allowed; }
+    .custom-checkbox { width: 1.2rem; height: 1.2rem; cursor: pointer; }
+</style>
+{% endblock %}
+
+{% block content %}
+<h2 class="fw-bold mb-4 text-dark"><i class="bi bi-cart3 text-primary"></i> Giỏ Hàng Chi Tiết</h2>
+
+<div class="row g-4">
+    <div class="col-lg-8">
+        <div class="cart-container">
+            {% if cart_items %}
+                <div class="d-flex align-items-center mb-3 pb-3 border-bottom">
+                    <input class="form-check-input custom-checkbox me-3" type="checkbox" id="selectAll" checked>
+                    <label class="fw-bold cursor-pointer" for="selectAll">Chọn tất cả ({{ cart_items|length }} sản phẩm)</label>
+                </div>
+
+                {% for item in cart_items %}
+                <div class="row align-items-center py-3 {% if not loop.last %}border-bottom{% endif %}">
+                    <div class="col-md-1 col-2 text-center">
+                        <input class="form-check-input custom-checkbox item-checkbox" type="checkbox" 
+                               value="{{ item._id }}" 
+                               data-price="{{ item.price }}" 
+                               data-qty="{{ item.quantity }}" 
+                               checked>
+                    </div>
+                    <div class="col-md-2 col-3 text-center">
+                        <img src="{{ item.images[0] if item.images[0] else 'https://via.placeholder.com/80' }}" class="product-thumb" alt="{{ item.title }}">
+                    </div>
+                    <div class="col-md-4 col-7">
+                        <a href="/product/{{ item._id }}" class="text-decoration-none text-dark fw-semibold d-block text-truncate mb-1" title="{{ item.title }}">{{ item.title }}</a>
+                        <small class="text-muted d-block">Đơn giá: <span class="price-text">${{ "{:,.2f}".format(item.price) }}</span></small>
+                    </div>
+                    <div class="col-md-3 col-6 mt-3 mt-md-0 d-flex justify-content-center">
+                        <form action="{{ url_for('cart.update_cart', product_id=item._id) }}" method="POST" class="m-0">
+                            <input type="number" name="quantity" value="{{ item.quantity }}" min="1" max="10" class="form-control form-control-sm text-center shadow-sm" style="width: 70px;" onchange="this.form.submit()">
+                        </form>
+                    </div>
+                    <div class="col-md-2 col-6 mt-3 mt-md-0 text-end">
+                        <span class="price-text d-block fs-5 fw-bold mb-2">${{ "{:,.2f}".format(item.subtotal) }}</span>
+                        <form action="{{ url_for('cart.delete_item', product_id=item._id) }}" method="POST" class="m-0">
+                            <button type="submit" class="btn btn-link text-danger p-0 text-decoration-none small"><i class="bi bi-trash3-fill"></i> Xóa</button>
+                        </form>
+                    </div>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div class="text-center py-5">
+                    <span class="fs-1 opacity-25">🛒</span>
+                    <h4 class="text-muted mt-3">Giỏ hàng của bạn đang trống rỗng</h4>
+                    <p class="text-muted small">Hãy quay lại trang chủ và tìm kiếm món đồ gia dụng ưng ý nhé.</p>
+                    <a href="/" class="btn btn-primary rounded-pill px-4 mt-2 fw-semibold">Mua sắm ngay</a>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    {% if cart_items %}
+    <div class="col-lg-4">
+        <div class="summary-box shadow-sm">
+            <h5 class="fw-bold border-bottom pb-3 mb-3 text-dark"><i class="bi bi-receipt me-2 text-secondary"></i> Tóm tắt đơn hàng</h5>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Tạm tính (<span id="selectedCount">{{ cart_items|length }}</span> sp)</span>
+                <span class="fw-semibold" id="subtotalAmount">${{ "{:,.2f}".format(total_amount) }}</span>
+            </div>
+            <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted">Phí vận chuyển</span>
+                <span class="text-success fw-semibold">Miễn phí</span>
+            </div>
+            <hr>
+            <div class="d-flex justify-content-between mb-4 align-items-center">
+                <span class="fw-bold fs-5 text-dark">Tổng cộng:</span>
+                <span class="price-text fs-3 fw-bold" id="totalAmount">${{ "{:,.2f}".format(total_amount) }}</span>
+            </div>
+            <button type="button" id="btnCheckout" class="btn w-100 btn-checkout py-2.5 shadow-sm fs-5" onclick="processCheckout()">
+                <i class="bi bi-lightning-charge-fill me-1"></i> Tiến hành đặt hàng
+            </button>
+        </div>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const itemCheckboxes = document.querySelectorAll('.item-checkbox');
+        const selectAllCheckbox = document.getElementById('selectAll');
+        const totalAmountEl = document.getElementById('totalAmount');
+        const subtotalAmountEl = document.getElementById('subtotalAmount');
+        const selectedCountEl = document.getElementById('selectedCount');
+        const btnCheckout = document.getElementById('btnCheckout');
+
+        // Hàm tính toán lại tổng tiền dựa trên các checkbox được tick
+        function calculateTotal() {
+            let total = 0;
+            let count = 0;
+            
+            itemCheckboxes.forEach(cb => {
+                if (cb.checked) {
+                    total += parseFloat(cb.dataset.price) * parseInt(cb.dataset.qty);
+                    count += 1;
+                }
+            });
+
+            // Format tiền theo chuẩn US (có dấu phẩy và 2 số thập phân)
+            const formattedTotal = '$' + total.toLocaleString('en-US', {minimumFractionDigits: 2, maximumFractionDigits: 2});
+            totalAmountEl.innerText = formattedTotal;
+            subtotalAmountEl.innerText = formattedTotal;
+            selectedCountEl.innerText = count;
+
+            // Vô hiệu hóa nút thanh toán nếu không chọn sản phẩm nào
+            if (count === 0) {
+                btnCheckout.classList.add('disabled');
+            } else {
+                btnCheckout.classList.remove('disabled');
+            }
+            
+            // Cập nhật trạng thái nút "Chọn tất cả"
+            selectAllCheckbox.checked = (count === itemCheckboxes.length && itemCheckboxes.length > 0);
+        }
+
+        // Lắng nghe sự kiện đổi trạng thái trên từng sản phẩm
+        itemCheckboxes.forEach(cb => {
+            cb.addEventListener('change', calculateTotal);
+        });
+
+        // Lắng nghe sự kiện tick "Chọn tất cả"
+        if (selectAllCheckbox) {
+            selectAllCheckbox.addEventListener('change', function() {
+                const isChecked = this.checked;
+                itemCheckboxes.forEach(cb => { cb.checked = isChecked; });
+                calculateTotal();
+            });
+        }
+    });
+
+    // Hàm thu thập ID và gửi đi khi bấm Đặt hàng
+    function processCheckout() {
+        const selectedItems = [];
+        document.querySelectorAll('.item-checkbox:checked').forEach(cb => {
+            selectedItems.push(cb.value);
+        });
+
+        if (selectedItems.length === 0) {
+            alert('Vui lòng chọn ít nhất 1 sản phẩm để tiến hành thanh toán!');
+            return;
+        }
+
+        // Tạo form ẩn và submit danh sách ID đã chọn sang Route Checkout
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = '/checkout';
+
+        selectedItems.forEach(id => {
+            const input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = 'selected_items';
+            input.value = id;
+            form.appendChild(input);
+        });
+
+        document.body.appendChild(form);
+        form.submit();
+    }
+</script>
+{% endblock %}

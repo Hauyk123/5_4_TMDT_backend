@@ -1,0 +1,243 @@
+{% extends "base.html" %}
+
+{% block title %}
+Tìm kiếm: {{ query }} - Hệ Thống Gia Dụng
+{% endblock %}
+
+{% block content %}
+<style>
+    body { background-color: #f0f2f5; color: #333; }
+    .form-control:focus { box-shadow: none; border-color: #ff9900; }
+    
+    /* Sidebar Filter Style */
+    .filter-sidebar {
+        background: white; border-radius: 8px; padding: 20px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+        position: sticky; top: 90px;
+        border: 1px solid #e3e6e8;
+    }
+    .filter-header { font-weight: 700; font-size: 0.9rem; text-transform: uppercase; margin-bottom: 15px; color: #111; border-bottom: 2px solid #f0f0f0; padding-bottom: 8px; }
+    .form-check-label { font-size: 0.95rem; cursor: pointer; }
+    .rating-star { color: #ffa41c; font-size: 0.9rem; }
+
+    /* Product Card Style */
+    .product-card {
+        background: white; border: 1px solid #e3e6e8; border-radius: 12px;
+        transition: all 0.25s ease; height: 100%; display: flex; flex-direction: column; position: relative;
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #d1d5db; }
+
+    .card-img-wrap { height: 220px; padding: 20px; display: flex; align-items: center; justify-content: center; background: #fff; border-bottom: 1px solid #f9f9f9; border-radius: 12px 12px 0 0; }
+    .card-img-top { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+    .card-body { padding: 16px; display: flex; flex-direction: column; flex-grow: 1; }
+    .card-title { font-size: 0.95rem; font-weight: 600; line-height: 1.4; color: #333; margin-bottom: 8px; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+    .card-title:hover { color: #B12704; }
+
+    .price-tag { color: #B12704; font-size: 1.25rem; font-weight: 700; margin-bottom: 0; }
+    .meta-info { font-size: 0.8rem; color: #6c757d; display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+
+    .ai-badge { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 4px 10px; border-radius: 20px; font-size: 0.75rem; font-weight: bold; position: absolute; top: 10px; right: 10px; box-shadow: 0 2px 5px rgba(0,0,0,0.2); z-index: 2; }
+
+    .pagination .page-link { color: #333; border: 1px solid #dee2e6; margin: 0 3px; border-radius: 6px; }
+    .pagination .page-item.active .page-link { background-color: #232f3e; border-color: #232f3e; color: white; }
+
+    .btn-quick-cart { width: 38px; height: 38px; border-radius: 50%; display: flex; align-items: center; justify-content: center; background-color: #ffd814; border: 1px solid #fcd200; color: #111; transition: all 0.2s; }
+    .btn-quick-cart:hover { background-color: #f7ca00; transform: scale(1.1); }
+
+    /* Right Sidebar History Style */
+    .history-sidebar { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); position: sticky; top: 90px; }
+    .history-item { display: flex; align-items: center; margin-bottom: 12px; text-decoration: none; color: #333; transition: 0.2s; padding: 5px; border-radius: 8px; }
+    .history-item:hover { background: #e3f2fd; }
+    .history-thumb { width: 45px; height: 45px; object-fit: contain; border: 1px solid #eee; background: #fff; border-radius: 6px; flex-shrink: 0; }
+</style>
+
+<div class="container-fluid px-lg-5 py-4 pb-5">
+    <nav aria-label="breadcrumb" class="mb-3">
+        <ol class="breadcrumb mb-0 small fw-medium">
+            <li class="breadcrumb-item"><a href="/" class="text-decoration-none text-muted"><i class="bi bi-house-door-fill me-1"></i>Trang chủ</a></li>
+            <li class="breadcrumb-item active text-dark" aria-current="page">Tìm kiếm</li>
+            <li class="breadcrumb-item active text-dark" aria-current="page">{{ query }}</li>
+        </ol>
+    </nav>
+
+    <div class="bg-white p-3 rounded shadow-sm border mb-4">
+        <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center gap-3">
+            <div>
+                <h5 class="mb-0 fw-bold">Kết quả cho: <span class="text-primary">"{{ query }}"</span></h5>
+                <small class="text-muted">Tìm thấy <strong>{{ total_products }}</strong> sản phẩm phù hợp</small>
+            </div>
+
+            <form id="sortForm" action="/search" method="GET" class="d-flex align-items-center gap-2 m-0">
+                <input type="hidden" name="q" value="{{ query }}">
+                {% if current_min_price %}<input type="hidden" name="min_price" value="{{ current_min_price }}">{% endif %}
+                {% if current_max_price %}<input type="hidden" name="max_price" value="{{ current_max_price }}">{% endif %}
+                {% if current_rating %}<input type="hidden" name="rating" value="{{ current_rating }}">{% endif %}
+
+                <label class="small fw-bold text-muted text-nowrap">Sắp xếp:</label>
+                <select name="sort" class="form-select form-select-sm border-secondary shadow-sm" style="width: 200px;" onchange="this.form.submit()">
+                    <option value="relevance" {% if current_sort == 'relevance' %}selected{% endif %}>💡 Liên quan nhất (AI)</option>
+                    <option value="review_desc" {% if current_sort == 'review_desc' %}selected{% endif %}>🔥 Bán chạy nhất</option>
+                    <option value="price_asc" {% if current_sort == 'price_asc' %}selected{% endif %}>💰 Giá: Thấp đến Cao</option>
+                    <option value="price_desc" {% if current_sort == 'price_desc' %}selected{% endif %}>💎 Giá: Cao đến Thấp</option>
+                </select>
+            </form>
+        </div>
+
+        <div class="d-flex flex-wrap gap-2 border-top pt-3 mt-3">
+            <span class="badge bg-light text-dark border p-2 fw-medium" style="cursor: pointer;"><i class="bi bi-truck text-success fs-6 me-1"></i> Giao nhanh 2H</span>
+            <span class="badge bg-light text-dark border p-2 fw-medium" style="cursor: pointer;"><i class="bi bi-box-seam text-warning me-1"></i> Freeship Toàn Quốc</span>
+            <span class="badge bg-light text-dark border p-2 fw-medium" style="cursor: pointer;"><i class="bi bi-shield-check text-primary fs-6 me-1"></i> Hàng chính hãng</span>
+            <span class="badge bg-light text-dark border p-2 fw-medium" style="cursor: pointer;"><i class="bi bi-star-fill text-warning fs-6 me-1"></i> Đánh giá từ 4 sao</span>
+            <span class="badge bg-light text-dark border p-2 fw-medium" style="cursor: pointer;"><i class="bi bi-percent text-danger fs-6 me-1"></i> Đang giảm giá</span>
+        </div>
+    </div>
+
+    <div class="row g-4">
+        <div class="col-lg-2">
+            <div class="filter-sidebar">
+                <form action="/search" method="GET">
+                    <input type="hidden" name="q" value="{{ query }}">
+                    <input type="hidden" name="sort" value="{{ current_sort }}">
+                    <div class="mb-4">
+                        <div class="filter-header"><i class="bi bi-star-fill text-warning me-2"></i>Đánh giá</div>
+                        <div class="d-flex flex-column gap-2">
+                            {% for r in [4, 3] %}
+                            <label class="form-check-label d-flex align-items-center p-1 rounded hover-bg">
+                                <input type="radio" name="rating" value="{{ r }}" class="form-check-input me-2" {% if current_rating == r %}checked{% endif %} onchange="this.form.submit()">
+                                <div class="rating-star">
+                                    {% for i in range(r) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                    {% for i in range(5-r) %}<i class="bi bi-star"></i>{% endfor %}
+                                </div>
+                                <span class="small text-muted ms-2">& lên</span>
+                            </label>
+                            {% endfor %}
+                        </div>
+                    </div>
+                    <div class="mb-4">
+                        <div class="filter-header"><i class="bi bi-tag-fill text-primary me-2"></i>Khoảng giá ($)</div>
+                        <div class="d-flex gap-2 mb-2">
+                            <input type="number" name="min_price" class="form-control form-control-sm" placeholder="Từ" value="{{ current_min_price if current_min_price }}">
+                            <input type="number" name="max_price" class="form-control form-control-sm" placeholder="Đến" value="{{ current_max_price if current_max_price }}">
+                        </div>
+                        <button type="submit" class="btn btn-dark btn-sm w-100 fw-bold shadow-sm">Áp dụng</button>
+                    </div>
+                    <a href="/search?q={{ query }}" class="btn btn-outline-secondary btn-sm w-100"><i class="bi bi-arrow-counterclockwise me-1"></i>Xóa lọc</a>
+                </form>
+            </div>
+        </div>
+
+        <div class="col-lg-8">
+            {% if results %}
+                <div class="row row-cols-1 row-cols-sm-2 row-cols-md-3 row-cols-lg-4 g-4">
+                    {% for p in results %}
+                    <div class="col">
+                        <div class="product-card">
+                            {% if query %}
+                            <div class="ai-badge"><i class="bi bi-robot me-1"></i>AI Match</div>
+                            {% endif %}
+
+                            <a href="/product/{{ p._id }}" class="text-decoration-none text-dark flex-grow-1 d-flex flex-column">
+                                <div class="card-img-wrap">
+                                    {% if p.image_url %}
+                                        <img src="{{ p.image_url }}" class="card-img-top">
+                                    {% elif p.images %}
+                                        <img src="{{ p.images[0] }}" class="card-img-top">
+                                    {% else %}
+                                        <img src="https://via.placeholder.com/300?text=No+Img" class="card-img-top">
+                                    {% endif %}
+                                </div>
+                                <div class="card-body pb-0">
+                                    <div class="card-title" title="{{ p.title }}">{{ p.title }}</div>
+                                    <div class="meta-info">
+                                        <div class="text-warning">
+                                            <span class="fw-bold text-dark me-1">{{ p.average_rating|default(0)|round(1) }}</span>
+                                            <i class="bi bi-star-fill"></i>
+                                        </div>
+                                        <span class="small border px-2 rounded bg-light">Chính hãng</span>
+                                    </div>
+                                </div>
+                            </a>
+
+                            <div class="px-3 pb-3 pt-2 d-flex justify-content-between align-items-center border-top" style="background-color: #fcfcfc;">
+                                <span class="price-tag">{% if p.price %}${{ p.price }}{% else %}Liên hệ{% endif %}</span>
+
+                                <form action="/add_to_cart" method="POST" class="m-0">
+                                    <input type="hidden" name="product_id" value="{{ p._id }}">
+                                    <input type="hidden" name="quantity" value="1">
+                                    <button type="submit" class="btn-quick-cart shadow-sm" title="Thêm vào giỏ">
+                                        <i class="bi bi-cart-plus-fill fs-5"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+
+                {% if total_pages > 1 %}
+                <nav class="mt-5">
+                    <ul class="pagination justify-content-center">
+                        <li class="page-item {% if page == 1 %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('main.search', q=query, page=page-1, sort=current_sort, min_price=current_min_price, max_price=current_max_price, rating=current_rating) }}"><i class="bi bi-chevron-left"></i></a>
+                        </li>
+                        {% for p in range(1, total_pages + 1) %}
+                            {% if p == 1 or p == total_pages or (p >= page - 2 and p <= page + 2) %}
+                                <li class="page-item {% if p == page %}active{% endif %}">
+                                    <a class="page-link" href="{{ url_for('main.search', q=query, page=p, sort=current_sort, min_price=current_min_price, max_price=current_max_price, rating=current_rating) }}">{{ p }}</a>
+                                </li>
+                            {% elif p == page - 3 or p == page + 3 %}
+                                <li class="page-item disabled"><span class="page-link">...</span></li>
+                            {% endif %}
+                        {% endfor %}
+                        <li class="page-item {% if page == total_pages %}disabled{% endif %}">
+                            <a class="page-link" href="{{ url_for('main.search', q=query, page=page+1, sort=current_sort, min_price=current_min_price, max_price=current_max_price, rating=current_rating) }}"><i class="bi bi-chevron-right"></i></a>
+                        </li>
+                    </ul>
+                </nav>
+                {% endif %}
+
+            {% else %}
+                <div class="text-center py-5 bg-white rounded shadow-sm border mt-3">
+                    <div class="mb-3"><span class="display-1">🧐</span></div>
+                    <h4>Không tìm thấy sản phẩm nào!</h4>
+                    <p class="text-muted">Rất tiếc, hệ thống không tìm thấy sản phẩm phù hợp với bộ lọc này.</p>
+                    <a href="/search?q={{ query }}" class="btn btn-primary px-4 rounded-pill">Xóa bộ lọc & Thử lại</a>
+                </div>
+            {% endif %}
+        </div>
+
+        <div class="col-lg-2 d-none d-lg-block">
+            <div class="history-sidebar">
+                <h6 class="fw-bold border-bottom pb-2 mb-3 small text-uppercase text-muted" style="letter-spacing: 1px;">🕒 Gần đây</h6>
+                {% if history %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for h in history[:6] %}
+                        <a href="/product/{{ h._id }}" class="history-item">
+                            {% if h.image_url %}<img src="{{ h.image_url }}" class="history-thumb">{% elif h.images %}<img src="{{ h.images[0] }}" class="history-thumb">{% else %}<img src="https://via.placeholder.com/50" class="history-thumb">{% endif %}
+                            <div class="ms-2" style="min-width: 0;">
+                                <div class="text-truncate small lh-sm fw-semibold">{{ h.title }}</div>
+                                <span class="text-danger fw-bold" style="font-size: 0.8rem;">{% if h.price %}${{ h.price }}{% endif %}</span>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <span class="fs-1 opacity-25">👀</span>
+                        <p class="text-muted small mt-2">Chưa có lịch sử.</p>
+                    </div>
+                {% endif %}
+
+                <div class="mt-4 text-center">
+                    <div style="background: linear-gradient(135deg, #131921, #232f3e); color: white; padding: 15px; border-radius: 8px;">
+                        <span class="fs-2">🎁</span>
+                        <div class="fw-bold mt-1" style="color: #febd69;">Voucher 50K</div>
+                        <small class="text-white-50">Cho đơn hàng đầu tiên</small>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}

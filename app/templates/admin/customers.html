@@ -1,0 +1,132 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Quản lý Khách hàng - Admin Dashboard{% endblock %}
+{% block page_title %}Tài khoản Người dùng{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-1">Danh sách Tài khoản</h5>
+            <p class="text-muted small mb-0">Hệ thống đang có <strong>{{ total_users }}</strong> thành viên.</p>
+        </div>
+        
+        <form action="{{ url_for('admin.manage_customers') }}" method="GET" class="d-flex gap-2 alignment-md-center">
+            <select name="status" class="form-select" style="width: 180px;" onchange="this.form.submit()">
+                <option value="">Tất cả trạng thái</option>
+                <option value="ACTIVE" {% if status_filter == 'ACTIVE' %}selected{% endif %}>🟢 Hoạt động</option>
+                <option value="BANNED" {% if status_filter == 'BANNED' %}selected{% endif %}>🔴 Bị khóa</option>
+            </select>
+
+            <div class="input-group" style="width: 300px;">
+                <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Tìm tên, email, sđt...">
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+            </div>
+        </form>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+                <tr style="font-size: 0.9rem;">
+                    <th>ID</th>
+                    <th>Thông tin Khách hàng</th>
+                    <th>Liên hệ (Email / SĐT)</th>
+                    <th>Ngày đăng ký</th>
+                    <th>Vai trò</th>
+                    <th>Trạng thái</th>
+                    <th class="text-end" width="220">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for c in customers %}
+                <tr>
+                    <td class="fw-bold text-secondary">#{{ c.user_id }}</td>
+                    <td>
+                        <div class="d-flex align-items-center">
+                            <div class="bg-light rounded-circle d-flex align-items-center justify-content-center text-secondary me-3" style="width: 40px; height: 40px;">
+                                <i class="bi bi-person-fill fs-5"></i>
+                            </div>
+                            <div>
+                                <div class="fw-bold text-dark">{{ c.full_name or 'Chưa cập nhật' }}</div>
+                                <small class="text-muted">@{{ c.username }}</small>
+                            </div>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="small text-dark mb-1"><i class="bi bi-envelope text-muted me-1"></i> {{ c.email or 'N/A' }}</div>
+                        <div class="small text-dark"><i class="bi bi-telephone text-muted me-1"></i> {{ c.phone or 'N/A' }}</div>
+                    </td>
+                    <td class="text-muted small">{{ c.created_at.strftime('%d/%m/%Y') if c.created_at else '' }}</td>
+                    <td>
+                        {% if c.role == 'ADMIN' %}
+                            <span class="badge bg-danger">Quản trị viên</span>
+                        {% elif c.role == 'STAFF' %}
+                            <span class="badge bg-info text-dark">Nhân viên</span>
+                        {% else %}
+                            <span class="badge bg-light text-dark border">Khách hàng</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        {% if c.status == 'BANNED' %}
+                            <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2"><i class="bi bi-lock-fill me-1"></i>Bị khóa</span>
+                        {% else %}
+                            <span class="badge bg-success-subtle text-success border border-success-subtle px-2"><i class="bi bi-check-circle-fill me-1"></i>Hoạt động</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="d-flex justify-content-end gap-1">
+                            <a href="{{ url_for('admin.view_customer', user_id=c.user_id) }}" class="btn btn-sm btn-outline-primary rounded-pill px-2" title="Xem chi tiết">
+                                <i class="bi bi-person-vcard"></i> Hồ sơ
+                            </a>
+
+                            <form action="{{ url_for('admin.toggle_customer_status', user_id=c.user_id) }}" method="POST" class="d-inline">
+                                <input type="hidden" name="current_q" value="{{ search_query }}">
+                                <input type="hidden" name="current_status" value="{{ status_filter }}">
+
+                                {% if c.status == 'BANNED' %}
+                                    <button type="submit" class="btn btn-sm btn-outline-success rounded-pill px-2" title="Mở khóa tài khoản" onclick="return confirm('Xác nhận MỞ KHÓA cho tài khoản {{ c.username }}?');">
+                                        <i class="bi bi-unlock-fill me-1"></i> Mở khóa
+                                    </button>
+                                {% else %}
+                                    <button type="submit" class="btn btn-sm btn-outline-danger rounded-pill px-2" title="Khóa tài khoản" onclick="return confirm('Bạn có chắc chắn muốn KHÓA tài khoản {{ c.username }} không?');">
+                                        <i class="bi bi-lock-fill me-1"></i> Khóa tài khoản
+                                    </button>
+                                {% endif %}
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+
+                {% if not customers %}
+                <tr>
+                    <td colspan="7" class="text-center py-5 text-muted">
+                        <i class="bi bi-people fs-1 d-block mb-2 opacity-50"></i>
+                        Không tìm thấy người dùng nào phù hợp!
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_customers', page=current_page-1, q=search_query, status=status_filter) }}">Trước</a>
+            </li>
+            {% for p in page_range %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link shadow-sm" href="{{ url_for('admin.manage_customers', page=p, q=search_query, status=status_filter) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_customers', page=current_page+1, q=search_query, status=status_filter) }}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

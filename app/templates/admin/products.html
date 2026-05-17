@@ -1,0 +1,104 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Quản lý Sản phẩm - Admin Dashboard{% endblock %}
+{% block page_title %}Kho Hàng & Sản Phẩm{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+    <div class="d-flex flex-column flex-md-row justify-content-between align-items-md-center mb-4 gap-3">
+        <div>
+            <h5 class="fw-bold text-dark mb-1">Tất cả sản phẩm</h5>
+            <p class="text-muted small mb-0">Hệ thống đang lưu trữ <strong>{{ total_products }}</strong> mặt hàng.</p>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <form action="{{ url_for('admin.manage_products') }}" method="GET" class="input-group" style="width: 250px;">
+                <input type="text" class="form-control" name="q" value="{{ search_query }}" placeholder="Tìm tên, danh mục...">
+                <button class="btn btn-outline-secondary" type="submit"><i class="bi bi-search"></i></button>
+            </form>
+            
+            <a href="{{ url_for('admin.add_product') }}" class="btn fw-semibold shadow-sm text-dark" style="background-color: #febd69;">
+                <i class="bi bi-plus-lg me-1"></i> Thêm Sản phẩm
+            </a>
+        </div>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle">
+            <thead class="table-light text-secondary">
+                <tr style="font-size: 0.9rem;">
+                    <th width="80">Ảnh</th>
+                    <th>Tên sản phẩm</th>
+                    <th>Danh mục</th>
+                    <th>Giá bán (USD)</th>
+                    <th>Tồn kho</th>
+                    <th class="text-end">Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for p in products %}
+                <tr>
+                    <td>
+                        <img src="{{ p.image_url }}" alt="Hình ảnh" class="rounded border" style="width: 50px; height: 50px; object-fit: contain; background: #fff;">
+                    </td>
+                    <td>
+                        <div class="fw-bold text-dark text-truncate" style="max-width: 250px;" title="{{ p.name }}">{{ p.name }}</div>
+                        <small class="text-muted">Mã SP: {{ p.product_id }}</small>
+                    </td>
+                    <td><span class="badge bg-light text-dark border">{{ p.category_name or 'Chưa phân loại' }}</span></td>
+                    <td class="fw-bold text-danger">${{ "{:,.2f}".format(p.price) }}</td>
+                    <td>
+                        {% if p.stock > 10 %}
+                            <span class="text-success fw-medium">{{ p.stock }}</span>
+                        {% elif p.stock > 0 %}
+                            <span class="text-warning fw-bold">{{ p.stock }}</span>
+                        {% else %}
+                            <span class="badge bg-danger">Hết hàng</span>
+                        {% endif %}
+                    </td>
+                    <td class="text-end">
+                        <div class="btn-group">
+                            <a href="{{ url_for('admin.edit_product', product_id=p.product_id) }}" class="btn btn-sm btn-outline-primary" title="Chỉnh sửa">
+                                <i class="bi bi-pencil-square"></i>
+                            </a>
+                            <form action="{{ url_for('admin.delete_product', product_id=p.product_id) }}" method="POST" class="d-inline">
+                                <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa" onclick="return confirm('Bạn có chắc chắn muốn xóa sản phẩm này khỏi hệ thống?')">
+                                    <i class="bi bi-trash3"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </td>
+                </tr>
+                {% endfor %}
+                
+                {% if not products %}
+                <tr>
+                    <td colspan="6" class="text-center py-5 text-muted">
+                        <i class="bi bi-inbox fs-1 d-block mb-2 opacity-50"></i>
+                        Không tìm thấy sản phẩm nào!
+                    </td>
+                </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if total_pages > 1 %}
+    <nav aria-label="Page navigation" class="mt-4">
+        <ul class="pagination justify-content-end mb-0">
+            <li class="page-item {% if current_page == 1 %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_products', page=current_page-1, q=search_query) }}">Trước</a>
+            </li>
+            {% for p in page_range %}
+                <li class="page-item {% if p == current_page %}active{% endif %}">
+                    <a class="page-link shadow-sm" href="{{ url_for('admin.manage_products', page=p, q=search_query) }}">{{ p }}</a>
+                </li>
+            {% endfor %}
+            <li class="page-item {% if current_page == total_pages %}disabled{% endif %}">
+                <a class="page-link shadow-sm" href="{{ url_for('admin.manage_products', page=current_page+1, q=search_query) }}">Sau</a>
+            </li>
+        </ul>
+    </nav>
+    {% endif %}
+</div>
+{% endblock %}

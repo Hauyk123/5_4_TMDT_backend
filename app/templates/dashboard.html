@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Admin Dashboard - Amazon AI</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css">
+    <style>
+        body { font-family: 'Inter', sans-serif; background-color: #f4f6f9; overflow-x: hidden; }
+        /* Sidebar Styles */
+        .sidebar { width: 260px; min-height: 100vh; background-color: #131921; color: #fff; position: fixed; left: 0; top: 0; z-index: 100; transition: all 0.3s; }
+        .sidebar .nav-link { color: #a5b1c2; padding: 12px 20px; font-weight: 500; border-radius: 8px; margin: 4px 15px; transition: 0.2s; }
+        .sidebar .nav-link:hover, .sidebar .nav-link.active { background-color: #232f3e; color: #febd69; }
+        .sidebar .nav-link i { margin-right: 10px; width: 20px; text-align: center; font-size: 1.1rem; }
+
+        /* Main Content Styles */
+        .main-content { margin-left: 260px; padding: 20px 30px; transition: all 0.3s; }
+        .topbar { background-color: #fff; box-shadow: 0 2px 10px rgba(0,0,0,0.05); padding: 15px 30px; border-radius: 12px; margin-bottom: 25px; display: flex; justify-content: space-between; align-items: center; }
+
+        /* Thẻ thống kê (Stats Cards) */
+        .stat-card { background: #fff; border-radius: 12px; padding: 25px; border: none; box-shadow: 0 4px 15px rgba(0,0,0,0.03); transition: transform 0.2s; }
+        .stat-card:hover { transform: translateY(-5px); }
+        .stat-icon { width: 60px; height: 60px; border-radius: 15px; display: flex; align-items: center; justify-content: center; font-size: 1.8rem; }
+    </style>
+</head>
+<body>
+
+    <div class="sidebar py-3">
+        <div class="text-center mb-4 pb-3 border-bottom border-secondary">
+            <h4 class="fw-bold text-white mb-0">Amazon <span style="color: #febd69;">AI</span></h4>
+            <span class="badge bg-danger mt-2">Admin Panel</span>
+        </div>
+        <ul class="nav flex-column">
+            <li class="nav-item">
+                <a class="nav-link active" href="/admin/dashboard"><i class="bi bi-grid-1x2-fill"></i> Tổng quan</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-box-seam-fill"></i> Quản lý Đơn hàng</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-tags-fill"></i> Quản lý Sản phẩm</a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#"><i class="bi bi-people-fill"></i> Khách hàng</a>
+            </li>
+            <li class="nav-item mt-4">
+                <a class="nav-link text-danger" href="/"><i class="bi bi-box-arrow-left"></i> Trở về Trang chủ</a>
+            </li>
+        </ul>
+    </div>
+
+    <div class="main-content">
+        <div class="topbar">
+            <h5 class="mb-0 fw-bold text-dark">Bảng điều khiển (Dashboard)</h5>
+            <div class="d-flex align-items-center">
+                <div class="me-3 text-end">
+                    <div class="fw-bold text-dark" style="font-size: 0.9rem;">{{ admin_name }}</div>
+                    <div class="text-muted" style="font-size: 0.75rem;">Quản trị viên cấp cao</div>
+                </div>
+                <div class="bg-primary rounded-circle text-white d-flex align-items-center justify-content-center" style="width: 40px; height: 40px;">
+                    <i class="bi bi-person-fill fs-5"></i>
+                </div>
+            </div>
+        </div>
+
+        <div class="row g-4 mb-4">
+            <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon bg-success-subtle text-success me-4"><i class="bi bi-cash-coin"></i></div>
+                    <div>
+                        <div class="text-muted fw-semibold small mb-1">TỔNG DOANH THU</div>
+                        <h3 class="fw-bold text-dark mb-0">{{ "{:,.0f}".format(revenue) }} đ</h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon bg-primary-subtle text-primary me-4"><i class="bi bi-box-seam"></i></div>
+                    <div>
+                        <div class="text-muted fw-semibold small mb-1">TỔNG SỐ ĐƠN HÀNG</div>
+                        <h3 class="fw-bold text-dark mb-0">{{ total_orders }} <span class="fs-6 fw-normal text-muted">đơn</span></h3>
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="stat-card d-flex align-items-center">
+                    <div class="stat-icon bg-warning-subtle text-warning me-4"><i class="bi bi-people"></i></div>
+                    <div>
+                        <div class="text-muted fw-semibold small mb-1">TÀI KHOẢN KHÁCH HÀNG</div>
+                        <h3 class="fw-bold text-dark mb-0">{{ total_users }} <span class="fs-6 fw-normal text-muted">người</span></h3>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card border-0 shadow-sm rounded-4 bg-white p-4">
+            <div class="d-flex justify-content-between align-items-center mb-4">
+                <h5 class="fw-bold text-dark mb-0">Đơn hàng chờ xử lý gần đây</h5>
+                <a href="#" class="btn btn-sm btn-outline-primary">Xem tất cả</a>
+            </div>
+            <div class="table-responsive">
+                <table class="table table-hover align-middle">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Mã Đơn</th>
+                            <th>Khách hàng</th>
+                            <th>Ngày đặt</th>
+                            <th>Tổng tiền</th>
+                            <th>Thanh toán</th>
+                            <th>Trạng thái</th>
+                            <th class="text-center">Thao tác</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for order in recent_orders %}
+                        <tr>
+                            <td class="fw-bold text-secondary">#{{ order.order_id }}</td>
+                            <td class="fw-medium">{{ order.receiver_name }}</td>
+                            <td>{{ order.created_at.strftime('%d/%m/%Y %H:%M') if order.created_at else '' }}</td>
+                            <td class="fw-bold text-danger">{{ "{:,.0f}".format(order.total_amount) }} đ</td>
+                            <td><span class="badge bg-light text-dark border">{{ order.payment_method }}</span></td>
+                            <td>
+                                {% if order.status == 'DELIVERED' %}
+                                    <span class="badge bg-success">Đã giao</span>
+                                {% elif order.status == 'SHIPPING' %}
+                                    <span class="badge bg-primary">Đang giao</span>
+                                {% else %}
+                                    <span class="badge bg-warning text-dark">Chờ duyệt</span>
+                                {% endif %}
+                            </td>
+                            <td class="text-center">
+                                {% if order.status == 'PENDING' or order.status == 'PROCESSING' %}
+                                    <button class="btn btn-sm btn-success px-3 rounded-pill" title="Duyệt đơn hàng này"><i class="bi bi-check2-circle me-1"></i> Duyệt đơn</button>
+                                {% else %}
+                                    <button class="btn btn-sm btn-secondary px-3 rounded-pill" disabled><i class="bi bi-eye"></i> Xem</button>
+                                {% endif %}
+                            </td>
+                        </tr>
+                        {% endfor %}
+                        {% if not recent_orders %}
+                        <tr><td colspan="7" class="text-center py-4 text-muted">Chưa có dữ liệu đơn hàng.</td></tr>
+                        {% endif %}
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

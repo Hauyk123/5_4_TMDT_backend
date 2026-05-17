@@ -1,0 +1,79 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}{{ 'Sửa Sản Phẩm' if product else 'Thêm Sản Phẩm Mới' }} - Admin Dashboard{% endblock %}
+{% block page_title %}{{ 'Cập nhật Sản Phẩm' if product else 'Thêm Sản Phẩm Mới' }}{% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4" style="max-width: 800px; margin: 0 auto;">
+    <div class="mb-4 border-bottom pb-3 d-flex justify-content-between align-items-center">
+        <h5 class="fw-bold text-dark mb-0"><i class="bi bi-box-seam me-2"></i> Thông tin sản phẩm</h5>
+        <a href="{{ url_for('admin.manage_products') }}" class="btn btn-sm btn-outline-secondary">Quay lại kho</a>
+    </div>
+
+    <form method="POST" enctype="multipart/form-data">
+        <div class="row g-3">
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Mã Sản Phẩm (ID)</label>
+                <input type="text" class="form-control bg-light" name="product_id" value="{{ product.product_id if product else '' }}" placeholder="Để trống tự tạo mã" {{ 'readonly' if product else '' }}>
+            </div>
+
+            <div class="col-md-8">
+                <label class="form-label fw-bold small text-secondary">Tên Sản Phẩm *</label>
+                <input type="text" class="form-control" name="name" value="{{ product.name if product else '' }}" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Danh Mục *</label>
+                <select class="form-select" name="category_id" required>
+                    <option value="">-- Chọn danh mục --</option>
+                    {% for cat in categories %}
+                        <option value="{{ cat.category_id }}" {% if product and product.category_id == cat.category_id %}selected{% endif %}>
+                            {{ cat.name }}
+                        </option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Giá Bán (USD) *</label>
+                <div class="input-group">
+                    <span class="input-group-text bg-white">$</span>
+                    <input type="number" step="0.01" class="form-control" name="price" value="{{ product.price if product else '' }}" required>
+                </div>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Tồn Kho *</label>
+                <input type="number" class="form-control" name="stock" value="{{ product.stock if product else '100' }}" required>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label fw-bold small text-secondary">Mô tả chi tiết</label>
+                <textarea class="form-control" name="description" rows="5" placeholder="Nhập mô tả các tính năng, công dụng của sản phẩm...">{{ product.description if product else '' }}</textarea>
+            </div>
+
+            <div class="col-12">
+                <label class="form-label fw-bold small text-secondary">Ảnh Sản Phẩm (Tải lên từ máy) {{ '*' if not product else '' }}</label>
+                <input type="file" class="form-control" name="image_file" accept="image/*" {{ 'required' if not product else '' }}>
+
+                {% if product %}
+                    <input type="hidden" name="current_image" value="{{ product.image_url }}">
+
+                    {% if product.image_url %}
+                    <div class="mt-2 p-2 border rounded bg-light d-inline-block">
+                        <span class="d-block small text-muted mb-1">Ảnh hiện tại đang sử dụng:</span>
+                        <img src="{{ product.image_url }}" alt="Preview" style="height: 80px; object-fit: contain;">
+                    </div>
+                    {% endif %}
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-top text-end">
+            <button type="submit" class="btn px-4 fw-semibold shadow-sm" style="background-color: #febd69; color: #111;">
+                <i class="bi bi-save me-2"></i> {{ 'Lưu Thay Đổi' if product else 'Tạo Sản Phẩm' }}
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}

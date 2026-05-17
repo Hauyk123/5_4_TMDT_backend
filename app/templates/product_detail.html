@@ -1,0 +1,406 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ product.title }} - Sàn TMĐT Đồ Gia Dụng{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* --- KHU VỰC SẢN PHẨM --- */
+    .product-section { background: white; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.08); padding: 30px; margin-top: 20px; }
+    .img-container { height: 380px; display: flex; align-items: center; justify-content: center; background: white; padding: 10px; border-radius: 8px; border: 1px solid #f0f0f0; }
+    .main-img { max-height: 100%; max-width: 100%; object-fit: contain; }
+
+    .product-title { font-size: 1.6rem; font-weight: 700; color: #111; line-height: 1.3; margin-bottom: 15px; }
+    .rating-wrapper { display: flex; align-items: center; gap: 8px; font-size: 1rem; margin-bottom: 15px; }
+    .stars { color: #ffa41c; letter-spacing: 1px; }
+
+    .price-wrapper { display: flex; align-items: baseline; gap: 15px; margin-bottom: 25px; }
+    .price-main { color: #B12704; font-size: 2rem; font-weight: 700; line-height: 1; }
+    .feature-list li { margin-bottom: 8px; color: #444; font-size: 0.95rem; line-height: 1.5; }
+
+    /* --- CỘT PHẢI: BUY BOX & TECH SPECS --- */
+    .buy-box { border: 1px solid #d5d9d9; border-radius: 8px; padding: 18px; background: #fff; }
+    .btn-add-cart { background-color: #ffd814; border: 1px solid #fcd200; border-radius: 50px; font-weight: 600; }
+    .btn-add-cart:hover { background-color: #f7ca00; }
+    .btn-buy-now { background-color: #ffa41c; border: 1px solid #ff8f00; border-radius: 50px; font-weight: 600; }
+    .btn-buy-now:hover { background-color: #fa8900; }
+
+    .tech-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 12px; padding: 20px; margin-top: 20px; }
+    .tech-header { font-size: 0.85rem; text-transform: uppercase; font-weight: 700; color: #6c757d; letter-spacing: 0.5px; margin-bottom: 20px; border-bottom: 2px solid #e9ecef; padding-bottom: 10px; }
+    .spec-row { display: flex; justify-content: space-between; margin-bottom: 15px; font-size: 0.9rem; border-bottom: 1px dashed #eee; padding-bottom: 5px; }
+    .spec-val { font-weight: 600; color: #333; text-align: right; }
+    .ai-badge { background: #e3f2fd; color: #0c4a6e; border: 1px solid #bae6fd; border-radius: 8px; padding: 12px; font-size: 0.9rem; margin-top: 20px; display: flex; gap: 12px; align-items: center; }
+
+    /* --- CONTROL BAR BÁM DÍNH --- */
+    .control-bar { background: #232f3e; border-radius: 10px; padding: 15px 30px; margin: 30px 0; display: flex; align-items: center; justify-content: space-between; color: white; box-shadow: 0 4px 10px rgba(0,0,0,0.15); }
+    .form-select-custom { background-color: #fff; color: #333; border: 2px solid #eee; border-radius: 6px; padding: 10px 15px; font-weight: 600; cursor: pointer; min-width: 280px; font-size: 0.95rem; outline: none; }
+
+    /* --- REVIEW SECTION --- */
+    .review-card { background: #fff; border-bottom: 1px solid #eee; padding: 20px 0; }
+    .review-card:last-child { border-bottom: none; }
+    .avatar-circle { width: 42px; height: 42px; background-color: #e3f2fd; color: #0d6efd; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-weight: bold; font-size: 1.1rem; flex-shrink: 0; }
+    .review-date { font-size: 0.85rem; color: #666; }
+    .review-text { color: #333; line-height: 1.5; font-size: 0.95rem; margin-top: 8px; }
+    .verified-badge { color: #c45500; font-weight: 600; font-size: 0.8rem; }
+
+    /* --- RECOMMENDATIONS --- */
+    .rec-section-title { font-weight: 700; font-size: 1.4rem; color: #333; margin-bottom: 25px; display: flex; align-items: center; gap: 12px; }
+    .rec-card { background: white; border: 1px solid #f0f0f0; border-radius: 10px; transition: transform 0.2s, box-shadow 0.2s; height: 100%; display: flex; flex-direction: column; }
+    .rec-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #ddd; }
+    .rec-img-box { height: 180px; padding: 20px; display: flex; align-items: center; justify-content: center; background: #fff; border-bottom: 1px solid #f9f9f9; border-radius: 10px 10px 0 0; }
+    .rec-img { max-height: 100%; max-width: 100%; object-fit: contain; }
+    .rec-body { padding: 15px; flex-grow: 1; display: flex; flex-direction: column; }
+    .rec-title { font-size: 0.95rem; font-weight: 500; color: #333; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; margin-bottom: 8px; line-height: 1.4; }
+    .rec-title:hover { color: #B12704; }
+    .rec-price { color: #B12704; font-weight: 700; font-size: 1.1rem; }
+    .hidden-rec { display: none; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="product-section">
+    <div class="row g-5">
+        <div class="col-lg-4 col-md-5">
+            <div class="img-container border">
+                {% if product.images and product.images[0] %}
+                    <img src="{{ product.images[0] }}" class="main-img" alt="{{ product.title }}">
+                {% else %}
+                    <img src="https://via.placeholder.com/400?text=No+Image" class="main-img">
+                {% endif %}
+            </div>
+        </div>
+
+        <div class="col-lg-5 col-md-7">
+            <div class="d-flex align-items-center mb-2">
+                <span class="badge bg-secondary me-2">{{ product.category_name | default('Đồ Gia Dụng') }}</span>
+                <span class="text-muted small fw-bold">ID: {{ product._id }}</span>
+            </div>
+
+            <h1 class="product-title">{{ product.title }}</h1>
+
+            <div class="rating-wrapper">
+                {% set rating = product.avg_rating | default(4.5) | float %}
+                <span class="fw-bold text-warning fs-5">{{ rating }}</span>
+                <div class="stars mx-2">
+                    {% for i in range(1, 6) %}
+                        {% if rating >= i %}<i class="bi bi-star-fill"></i>
+                        {% elif rating >= i - 0.5 %}<i class="bi bi-star-half"></i>
+                        {% else %}<i class="bi bi-star"></i>{% endif %}
+                    {% endfor %}
+                </div>
+                <a href="#reviewSection" class="text-primary small text-decoration-underline ms-1 pointer">{{ product.review_count | default('100+') }} đánh giá</a>
+            </div>
+
+            <hr class="my-4">
+
+            <div>
+                <h6 class="fw-bold text-dark mb-3"><i class="bi bi-list-check me-2"></i>Mô tả sản phẩm:</h6>
+                <ul class="list-unstyled feature-list ps-1">
+                    {% if product.features %}
+                        {% for f in product.features[:5] %}
+                            <li class="d-flex align-items-start"><i class="bi bi-check2-circle mt-1 text-primary me-2"></i> <span>{{ f }}</span></li>
+                        {% endfor %}
+                    {% elif product.description %}
+                         <li class="d-flex align-items-start"><i class="bi bi-info-circle-fill mt-1 text-primary me-2"></i> <span>{{ product.description[:300] }}...</span></li>
+                    {% else %}
+                         <li class="fst-italic text-muted">Sản phẩm này là hàng chính hãng được đảm bảo chất lượng. Thông số kỹ thuật chi tiết đang được hệ thống cập nhật.</li>
+                    {% endif %}
+                </ul>
+            </div>
+        </div>
+
+        <div class="col-lg-3">
+            <div class="buy-box shadow-sm mb-4">
+                <div class="price-main mb-2">
+                    {% if product.price %}${{ "{:,.2f}".format(product.price) }}{% else %}Liên hệ{% endif %}
+                </div>
+                <div class="text-success fw-bold fs-6 mb-3">Còn hàng (In Stock)</div>
+
+                <form action="/add_to_cart/{{ product._id }}" method="POST">
+                    <div class="mb-3 d-flex align-items-center gap-2">
+                        <label class="fw-semibold text-dark">Số lượng:</label>
+                        <select class="form-select form-select-sm w-auto shadow-sm border-secondary" name="quantity">
+                            <option value="1">1</option>
+                            <option value="2">2</option>
+                            <option value="3">3</option>
+                            <option value="4">4</option>
+                            <option value="5">5</option>
+                        </select>
+                    </div>
+                    <button type="submit" name="action" value="add_cart" class="btn w-100 btn-add-cart mb-2 shadow-sm">
+                        <i class="bi bi-cart-plus me-1"></i> Thêm vào giỏ hàng
+                    </button>
+                    <button type="submit" name="action" value="buy_now" class="btn w-100 btn-buy-now shadow-sm">
+                        <i class="bi bi-lightning-charge-fill me-1"></i> Mua ngay
+                    </button>
+                </form>
+
+                <div class="mt-3 pt-3 border-top small text-muted">
+                    <div class="d-flex justify-content-between mb-1"><span>Giao hàng bởi</span> <span class="fw-semibold text-dark">Amazon AI</span></div>
+                    <div class="d-flex justify-content-between mb-1"><span>Bán bởi</span> <span class="fw-semibold text-dark">Amazon AI</span></div>
+                    <div class="d-flex justify-content-between"><span>Đổi trả</span> <span class="fw-semibold text-dark">Trong 15 ngày</span></div>
+                </div>
+            </div>
+
+            <div class="tech-card shadow-sm">
+                <div class="tech-header">Dữ liệu hệ thống</div>
+                <div class="spec-row">
+                    <span class="text-muted">Thương hiệu</span>
+                    <span class="spec-val">{{ product.brand | default('Generic') }}</span>
+                </div>
+                <div class="spec-row">
+                    <span class="text-muted">Xếp hạng</span>
+                    <span class="spec-val">#{{ range(1, 100) | random }} in Sales</span>
+                </div>
+
+                <div class="ai-badge">
+                    <i class="bi bi-robot fs-2"></i>
+                    <div class="lh-sm">
+                        <strong class="d-block mb-1">AI Powered:</strong>
+                        Sản phẩm này đang được dùng làm mỏ neo để tìm kiếm tương đồng.
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="control-bar position-sticky" style="top: 75px; z-index: 1020;">
+    <div class="d-flex align-items-center gap-3">
+        <div class="bg-white bg-opacity-10 p-2 rounded-circle text-white border border-white border-opacity-25">
+            <i class="bi bi-cpu fs-4"></i>
+        </div>
+        <div class="d-none d-md-block">
+            <div class="fw-bold fs-5">Bộ lọc Gợi ý AI</div>
+            <div class="small text-white-50">Đổi mô hình thuật toán</div>
+        </div>
+    </div>
+
+    <div class="d-flex align-items-center gap-3">
+        <form action="/product/{{ product._id }}" method="GET" class="d-flex align-items-center m-0">
+            <input type="hidden" name="page" value="1">
+            <select name="model" class="form-select-custom shadow-sm" style="min-width: 200px;" onchange="this.form.submit()">
+                <option value="hybrid" {% if selected_model == 'hybrid' %}selected{% endif %}>🚀 Hybrid (Kết hợp)</option>
+                <option value="bert" {% if selected_model == 'bert' %}selected{% endif %}>✨ Content Based</option>
+                <option value="svd" {% if selected_model == 'svd' %}selected{% endif %}>🤝 Collaborative</option>
+            </select>
+        </form>
+
+        <form action="/add_to_cart/{{ product._id }}" method="POST" class="m-0 border-start ps-3 border-secondary border-opacity-50">
+            <input type="hidden" name="quantity" value="1">
+            <button type="submit" name="action" value="add_cart" class="btn fw-bold px-4 shadow-sm" style="background-color: #ffd814; color: #111; border-radius: 50px; border: 1px solid #fcd200; white-space: nowrap; transition: 0.2s;">
+                <i class="bi bi-cart-plus-fill fs-5 me-1"></i> Thêm vào giỏ
+            </button>
+        </form>
+    </div>
+</div>
+
+<div class="mb-5">
+    <div class="rec-section-title pb-2 border-bottom">
+        <i class="bi bi-lightbulb-fill text-warning"></i>
+        Sản phẩm tương tự
+        <span class="badge bg-secondary fw-normal fs-6 ms-2 rounded-pill">Top {{ recommendations|length }}</span>
+    </div>
+
+    {% if recommendations %}
+    <div class="row row-cols-2 row-cols-md-3 row-cols-lg-6 g-4" id="recommendationList">
+        {% for rec in recommendations %}
+        <div class="col {% if loop.index > 6 %}hidden-rec{% endif %}">
+            <div class="rec-card product-card">
+                <a href="/product/{{ rec._id }}?model={{ selected_model }}" class="text-decoration-none text-dark flex-grow-1 d-flex flex-column">
+                    <div class="rec-img-box">
+                        {% if rec.images and rec.images[0] %}
+                            <img src="{{ rec.images[0] }}" class="rec-img">
+                        {% else %}
+                            <img src="https://via.placeholder.com/200?text=No+Img" class="rec-img">
+                        {% endif %}
+                    </div>
+                    <div class="rec-body pb-0">
+                        <div class="rec-title" title="{{ rec.title }}">{{ rec.title }}</div>
+                        <div class="mb-2">
+                            <span class="fw-bold text-dark small me-1">{{ rec.average_rating|default(4.5)|round(1) }}</span>
+                            <i class="bi bi-star-fill text-warning small"></i>
+                        </div>
+                    </div>
+                </a>
+
+                <div class="px-3 pb-3 pt-2 d-flex justify-content-between align-items-center border-top bg-light rounded-bottom">
+                    <span class="rec-price mb-0">{% if rec.price %}${{ "{:,.2f}".format(rec.price) }}{% else %}Liên hệ{% endif %}</span>
+                    <form action="/add_to_cart/{{ rec._id }}" method="POST" class="m-0">
+                        <input type="hidden" name="quantity" value="1">
+                        <button type="submit" name="action" value="add_cart" class="btn-quick-cart shadow-sm" style="width: 32px; height: 32px;" title="Thêm vào giỏ">
+                            <i class="bi bi-cart-plus-fill fs-6"></i>
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if recommendations|length > 6 %}
+    <div class="text-center mt-4">
+        <button id="loadMoreBtn" class="btn btn-outline-primary rounded-pill px-4 fw-bold">
+            Xem thêm sản phẩm <i class="bi bi-chevron-down ms-1"></i>
+        </button>
+    </div>
+    {% endif %}
+
+    {% else %}
+        <div class="alert alert-warning text-center">Không tìm thấy gợi ý. Khối AI Core có thể đang tải.</div>
+    {% endif %}
+</div>
+
+<div class="row mt-4" id="reviewSection">
+    <div class="col-lg-8">
+
+        <div class="product-section mt-0 mb-4 border shadow-sm">
+            <h6 class="fw-bold text-dark mb-3"><i class="bi bi-pencil-square me-2 text-warning"></i>Viết đánh giá của bạn</h6>
+
+            <form action="{{ url_for('main.submit_review', product_id=product._id) }}" method="POST">
+                <div class="row g-3">
+                    <div class="col-md-4">
+                        <label class="form-label small fw-bold text-secondary">Mức độ hài lòng *</label>
+                        <select class="form-select shadow-sm" name="rating" required>
+                            <option value="5" selected>⭐⭐⭐⭐⭐ 5 Sao (Tuyệt vời)</option>
+                            <option value="4">⭐⭐⭐⭐ 4 Sao (Tốt)</option>
+                            <option value="3">⭐⭐⭐ 3 Sao (Bình thường)</option>
+                            <option value="2">⭐⭐ 2 Sao (Kém)</option>
+                            <option value="1">⭐ 1 Sao (Quá tệ)</option>
+                        </select>
+                    </div>
+                    <div class="col-md-8">
+                        <label class="form-label small fw-bold text-secondary">Tiêu đề đánh giá</label>
+                        <input type="text" class="form-control shadow-sm" name="title" placeholder="Tóm tắt ngắn gọn (Ví dụ: Máy chạy êm, rất đáng tiền)...">
+                    </div>
+                    <div class="col-12">
+                        <label class="form-label small fw-bold text-secondary">Nội dung nhận xét chi tiết *</label>
+                        <textarea class="form-control shadow-sm" name="text" rows="3" placeholder="Chia sẻ trải nghiệm thực tế của bạn về sản phẩm đồ gia dụng này để hệ thống AI học tập..." required></textarea>
+                    </div>
+                    <div class="col-12 text-end">
+                        <button type="submit" class="btn btn-sm btn-primary px-4 py-2 rounded-pill fw-medium shadow-sm">
+                            <i class="bi bi-send-fill me-1"></i> Gửi đánh giá lên hệ thống
+                        </button>
+                    </div>
+                </div>
+            </form>
+        </div>
+
+        <div class="product-section mt-0">
+            <div class="d-flex justify-content-between align-items-center border-bottom pb-3 mb-3">
+                <h5 class="fw-bold mb-0">
+                    <i class="bi bi-chat-square-quote-fill me-2 text-primary"></i>Đánh giá từ khách hàng
+                </h5>
+                <span class="badge bg-light text-dark border">Tổng {{ total_reviews | default(0) }} đánh giá</span>
+            </div>
+
+            {% if reviews %}
+                <div class="review-list">
+                    {% for review in reviews %}
+                    <div class="review-card">
+                        <div class="d-flex justify-content-between align-items-start">
+                            <div class="d-flex gap-3">
+                                <div class="avatar-circle">
+                                    {{ review.reviewerName[0] if review.reviewerName else 'U' }}
+                                </div>
+                                <div>
+                                    <div class="fw-bold text-dark">{{ review.reviewerName | default('Khách hàng Amazon') }}</div>
+                                    <div class="text-warning" style="font-size: 0.8rem;">
+                                        {% set score = review.rating | default(5) | int %}
+                                        {% for i in range(score) %}<i class="bi bi-star-fill"></i>{% endfor %}
+                                        <span class="text-dark fw-bold ms-2">{{ review.title }}</span>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="text-end">
+                                <div class="review-date small text-muted">{{ review.reviewTime | default(review.timestamp) }}</div>
+                            </div>
+                        </div>
+
+                        <div class="review-text ps-5 ms-2">
+                            {{ review.text }}
+                        </div>
+                        <div class="ps-5 ms-2 mt-2">
+                            <span class="verified-badge"><i class="bi bi-check-circle-fill"></i> Verified Purchase</span>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <div class="text-center py-5">
+                    <i class="bi bi-chat-left-dots fs-1 text-muted" style="font-size: 3rem;"></i>
+                    <p class="text-muted mt-3">Sản phẩm này chưa có đánh giá. Hãy là người đầu tiên nhận xét!</p>
+                </div>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="col-lg-4">
+        <div class="product-section mt-0 h-100">
+            <h6 class="fw-bold mb-3"><i class="bi bi-pie-chart-fill me-2"></i>Phân tích cảm xúc (Sentiment)</h6>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Tích cực (4-5 sao)</span>
+                    <span class="fw-bold">{{ sentiment.pos }}%</span>
+                </div>
+                <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                    <div class="progress-bar bg-success" role="progressbar"
+                         style="width: {{ sentiment.pos }}%; transition: width 1s ease-in-out;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Trung bình (3 sao)</span>
+                    <span class="fw-bold">{{ sentiment.neu }}%</span>
+                </div>
+                <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                    <div class="progress-bar bg-warning" role="progressbar"
+                         style="width: {{ sentiment.neu }}%; transition: width 1s ease-in-out;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="mb-3">
+                <div class="d-flex justify-content-between small mb-1">
+                    <span>Tiêu cực (1-2 sao)</span>
+                    <span class="fw-bold">{{ sentiment.neg }}%</span>
+                </div>
+                <div class="progress" style="height: 8px; background-color: #e9ecef;">
+                    <div class="progress-bar bg-danger" role="progressbar"
+                         style="width: {{ sentiment.neg }}%; transition: width 1s ease-in-out;">
+                    </div>
+                </div>
+            </div>
+
+            <div class="alert alert-light border mt-4 small d-flex gap-2">
+                <i class="bi bi-info-circle-fill text-primary mt-1"></i>
+                <div>
+                    Biểu đồ này được hệ thống tự động tính toán dựa trên đánh giá thực tế của sản phẩm này lấy từ MongoDB.
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_scripts %}
+<script>
+    document.addEventListener('DOMContentLoaded', function() {
+        const loadMoreBtn = document.getElementById('loadMoreBtn');
+        if (loadMoreBtn) {
+            loadMoreBtn.addEventListener('click', function() {
+                const hiddenRecs = document.querySelectorAll('.hidden-rec');
+                hiddenRecs.forEach(function(el) {
+                    el.classList.remove('hidden-rec');
+                    el.style.opacity = 0;
+                    el.style.display = 'block';
+                    setTimeout(() => el.style.opacity = 1, 50);
+                });
+                this.style.display = 'none';
+            });
+        }
+    });
+</script>
+{% endblock %}

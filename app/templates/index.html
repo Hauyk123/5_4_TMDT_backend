@@ -1,0 +1,245 @@
+{% extends 'base.html' %}
+
+{% block title %}Sàn TMĐT Đồ Gia Dụng - AI Recommender{% endblock %}
+
+{% block extra_styles %}
+<style>
+    /* --- SIDEBAR CỐ ĐỊNH --- */
+    .sticky-sidebar-container { position: sticky; top: 80px; height: calc(100vh - 100px); overflow-y: auto; scrollbar-width: thin; }
+    .sticky-sidebar-container::-webkit-scrollbar { width: 6px; }
+    .sticky-sidebar-container::-webkit-scrollbar-thumb { background-color: #ccc; border-radius: 10px; }
+    .sticky-sidebar-container::-webkit-scrollbar-track { background: transparent; }
+
+    /* --- DANH MỤC (CỘT TRÁI) --- */
+    .cat-sidebar { background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 4px 12px rgba(0,0,0,0.05); border: 1px solid #eee; }
+    .cat-group-header { padding: 12px 15px; font-weight: 800; font-size: 0.8rem; text-transform: uppercase; color: white; letter-spacing: 0.5px; display: flex; align-items: center; gap: 8px; }
+    .header-kitchen { background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); }
+    .header-living { background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); }
+    .header-bedroom { background: linear-gradient(135deg, #DA22FF 0%, #9733EE 100%); }
+    .header-bathroom { background: linear-gradient(135deg, #11998e 0%, #38ef7d 100%); }
+
+    .cat-link { display: flex; align-items: center; padding: 10px 15px; text-decoration: none; color: #4b5563; font-size: 0.9rem; font-weight: 500; border-bottom: 1px solid #f8f9fa; transition: all 0.2s; }
+    .cat-link:last-child { border-bottom: none; }
+    .cat-link:hover { background-color: #fff8f0; color: #B12704; padding-left: 20px; font-weight: 600; }
+    .cat-icon-small { width: 22px; height: 22px; object-fit: contain; margin-right: 12px; filter: grayscale(20%); }
+    .cat-link:hover .cat-icon-small { filter: grayscale(0%); transform: scale(1.1); }
+
+    /* --- RIGHT SIDEBAR: LỊCH SỬ (CỘT PHẢI) --- */
+    .history-sidebar { background: white; border-radius: 12px; padding: 15px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+    .history-item { display: flex; align-items: center; margin-bottom: 12px; text-decoration: none; color: #333; transition: 0.2s; padding: 5px; border-radius: 8px; }
+    .history-item:hover { background: #e3f2fd; }
+    .history-thumb { width: 45px; height: 45px; object-fit: contain; border: 1px solid #eee; background: #fff; border-radius: 6px; flex-shrink: 0; }
+
+    /* --- PRODUCT CARD (CỘT GIỮA) --- */
+    .product-card {
+        border: 1px solid #eee; border-radius: 12px; background: white;
+        transition: all 0.3s ease; height: 100%; display: flex; flex-direction: column;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+    }
+    .product-card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); border-color: #ddd; }
+    .card-img-container { height: 160px; padding: 15px; display: flex; align-items: center; justify-content: center; background: #fff; border-radius: 12px 12px 0 0; }
+    .card-img-top { max-height: 100%; max-width: 100%; object-fit: contain; transition: transform 0.3s; }
+    .product-card:hover .card-img-top { transform: scale(1.08); }
+
+    .card-body { padding: 12px; flex-grow: 1; display: flex; flex-direction: column; }
+    .rating-star { color: #ffa41c; font-size: 0.85rem; }
+    .text-truncate-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; height: 2.6em; line-height: 1.3; font-size: 0.9rem; font-weight: 500; color: #0F1111; margin-bottom: 8px; }
+    .text-truncate-2:hover { color: #B12704; }
+
+    /* --- SECTION STYLES KHÁC --- */
+    .greeting-bar { background: white; border-left: 5px solid #232f3e; padding: 20px; margin-bottom: 25px; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); display: flex; justify-content: space-between; align-items: center; }
+    .personal-section { background: linear-gradient(to bottom right, #fff5f5, #fff); border: 2px solid #ffe3e3; border-radius: 16px; padding: 25px; margin-bottom: 30px; position: relative; }
+    .personal-badge { background: #ff5e62; color: white; padding: 5px 15px; border-radius: 20px; font-size: 0.8rem; font-weight: bold; text-transform: uppercase; display: inline-block; margin-bottom: 10px; box-shadow: 0 2px 5px rgba(255, 94, 98, 0.4); }
+    .feature-box { background: white; border-radius: 16px; padding: 20px; height: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.03); border: 1px solid #f0f0f0; }
+    .title-underline { position: relative; display: inline-block; margin-bottom: 20px; font-weight: 800; font-size: 1.1rem; }
+    .title-underline::after { content: ''; display: block; width: 40px; height: 4px; border-radius: 2px; margin-top: 5px; }
+    .title-search { color: #007185; } .title-search::after { background: #007185; }
+    .title-trend { color: #B12704; } .title-trend::after { background: #B12704; }
+    .title-today { color: #008a00; } .title-today::after { background: #008a00; }
+    .mini-list-item { display: flex; align-items: center; padding: 10px 0; border-bottom: 1px solid #f5f5f5; text-decoration: none; color: #333; }
+    .mini-list-item:hover { background-color: #f9f9f9; padding-left: 5px; border-radius: 6px; }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="row g-4">
+
+    <div class="col-lg-2 d-none d-lg-block">
+        <div class="sticky-sidebar-container">
+            <div class="cat-sidebar">
+                {% for room_name, items in categories.items() %}
+                    {% set header_class = 'header-kitchen' %}
+                    {% set icon_char = '🍳' %}
+                    {% if 'Khách' in room_name %}{% set header_class = 'header-living' %}{% set icon_char = '🛋️' %}
+                    {% elif 'Ngủ' in room_name %}{% set header_class = 'header-bedroom' %}{% set icon_char = '🛏️' %}
+                    {% elif 'Vệ Sinh' in room_name %}{% set header_class = 'header-bathroom' %}{% set icon_char = '🛁' %}
+                    {% endif %}
+
+                    <div class="cat-group-header {{ header_class }}"><span>{{ icon_char }}</span> {{ room_name.split(' ')[1:] | join(' ') }}</div>
+                    <div>
+                        {% for cat in items %}
+                        <a href="/search?q={{ cat.query }}" class="cat-link">
+                            <img src="{{ cat.icon }}" class="cat-icon-small">{{ cat.name }}
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    </div>
+
+    <div class="col-lg-8">
+
+        <div class="greeting-bar">
+            <div>
+                <h4 class="mb-1 fw-bold text-dark">{{ greeting }}</h4>
+                <span class="text-muted small">Hôm nay bạn muốn tìm thiết bị gì cho ngôi nhà của mình?</span>
+            </div>
+            <div class="bg-light p-2 rounded-circle border"><span class="fs-2">🏡</span></div>
+        </div>
+
+        {% if personal_recs %}
+        <div class="personal-section">
+            <div class="personal-badge">Recommended for You</div>
+            <h3 class="fw-bold mb-4" style="color: #333;">💖 Có thể bạn sẽ thích</h3>
+
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                {% for p in personal_recs %}
+                <div class="col">
+                    <div class="product-card">
+                        <a href="/product/{{ p._id }}?model=hybrid" class="text-decoration-none text-dark flex-grow-1 d-flex flex-column">
+                            <div class="card-img-container">
+                                {% if p.images and p.images[0] %}<img src="{{ p.images[0] }}" class="card-img-top">{% else %}<img src="https://via.placeholder.com/200" class="card-img-top">{% endif %}
+                            </div>
+                            <div class="card-body pb-0">
+                                <div class="text-truncate-2">{{ p.title }}</div>
+                                <div class="rating-star mb-1">★★★★☆</div>
+                            </div>
+                        </a>
+                        <div class="px-3 pb-3 pt-2 d-flex justify-content-between align-items-center border-top bg-light rounded-bottom">
+                            <span class="price">{% if p.price %}${{ "{:,.2f}".format(p.price) }}{% endif %}</span>
+                            <form action="/add_to_cart" method="POST" class="m-0">
+                                <input type="hidden" name="product_id" value="{{ p._id }}">
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn-quick-cart shadow-sm" title="Thêm vào giỏ">
+                                    <i class="bi bi-cart-plus-fill fs-6"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+
+        <div class="row g-4 mb-5">
+            <div class="col-md-6">
+                <div class="feature-box">
+                    <h5 class="title-underline title-search">🔍 Được tìm nhiều nhất</h5>
+                    <div class="d-flex flex-column gap-1">
+                        {% for p in top_search %}
+                        <a href="/product/{{ p._id }}" class="mini-list-item">
+                            <div style="width: 50px; height: 50px; flex-shrink: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 2px;">
+                                {% if p.images and p.images[0] %}<img src="{{ p.images[0] }}" style="width: 100%; height: 100%; object-fit: contain;">{% endif %}
+                            </div>
+                            <div class="ms-3 flex-grow-1" style="min-width: 0;">
+                                <div class="text-truncate small fw-bold">{{ p.title }}</div>
+                                <div class="text-danger small fw-bold">{% if p.price %}${{ "{:,.2f}".format(p.price) }}{% endif %}</div>
+                            </div>
+                            <span class="text-muted small">➜</span>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+
+            <div class="col-md-6">
+                <div class="feature-box">
+                    <h5 class="title-underline title-trend">🔥 Xu hướng tuần này</h5>
+                    <div class="d-flex flex-column gap-1">
+                        {% for p in top_trending %}
+                        <a href="/product/{{ p._id }}" class="mini-list-item">
+                            <div style="width: 50px; height: 50px; flex-shrink: 0; background: #fff; border: 1px solid #eee; border-radius: 8px; padding: 2px; position: relative;">
+                                {% if p.images and p.images[0] %}<img src="{{ p.images[0] }}" style="width: 100%; height: 100%; object-fit: contain;">{% endif %}
+                                <div class="position-absolute top-0 start-0 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem;">Hot</div>
+                            </div>
+                            <div class="ms-3 flex-grow-1" style="min-width: 0;">
+                                <div class="text-truncate small fw-bold">{{ p.title }}</div>
+                                <small class="text-muted" style="font-size: 0.75rem;">{{ p.review_count | default('100+') }} đánh giá</small>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="mb-4">
+            <h5 class="title-underline title-today ps-2">⚡ Gợi ý hôm nay</h5>
+            <div class="row row-cols-2 row-cols-md-4 g-3">
+                {% for p in today_recs %}
+                <div class="col">
+                    <div class="product-card">
+                        <a href="/product/{{ p._id }}" class="text-decoration-none text-dark flex-grow-1 d-flex flex-column">
+                            <div class="card-img-container">
+                                {% if p.images and p.images[0] %}<img src="{{ p.images[0] }}" class="card-img-top">{% else %}<img src="https://via.placeholder.com/200" class="card-img-top">{% endif %}
+                            </div>
+                            <div class="card-body pb-0">
+                                <div class="text-truncate-2">{{ p.title }}</div>
+                                <div class="rating-star mb-1">★★★★☆</div>
+                            </div>
+                        </a>
+                        <div class="px-3 pb-3 pt-2 d-flex justify-content-between align-items-center border-top bg-light rounded-bottom">
+                            <span class="price small">{% if p.price %}${{ "{:,.2f}".format(p.price) }}{% endif %}</span>
+                            <form action="/add_to_cart" method="POST" class="m-0">
+                                <input type="hidden" name="product_id" value="{{ p._id }}">
+                                <input type="hidden" name="quantity" value="1">
+                                <button type="submit" class="btn-quick-cart shadow-sm" style="width: 30px; height: 30px;" title="Thêm vào giỏ">
+                                    <i class="bi bi-cart-plus-fill fs-6"></i>
+                                </button>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+
+    </div>
+
+    <div class="col-lg-2">
+        <div class="sticky-sidebar-container">
+            <div class="history-sidebar">
+                <h6 class="fw-bold border-bottom pb-2 mb-3 small text-uppercase text-muted" style="letter-spacing: 1px;">🕒 Vừa xem</h6>
+                {% if history %}
+                    <div class="d-flex flex-column gap-2">
+                        {% for h in history %}
+                        <a href="/product/{{ h._id }}" class="history-item">
+                            {% if h.images and h.images[0] %}<img src="{{ h.images[0] }}" class="history-thumb">{% else %}<img src="https://via.placeholder.com/50" class="history-thumb">{% endif %}
+                            <div class="ms-2" style="min-width: 0;">
+                                <div class="text-truncate small lh-sm fw-semibold">{{ h.title }}</div>
+                            </div>
+                        </a>
+                        {% endfor %}
+                    </div>
+                {% else %}
+                    <div class="text-center py-4">
+                        <span class="fs-1 opacity-25">👀</span>
+                        <p class="text-muted small mt-2">Chưa có lịch sử.</p>
+                    </div>
+                {% endif %}
+            </div>
+
+            <div class="mt-4 text-center">
+                <div style="background: #232f3e; color: white; padding: 20px; border-radius: 12px;">
+                    <span class="fs-1">🚚</span>
+                    <div class="fw-bold mt-2">Free Shipping</div>
+                    <small class="text-white-50">On orders over $50</small>
+                </div>
+            </div>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

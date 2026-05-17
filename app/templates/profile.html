@@ -1,0 +1,246 @@
+{% extends 'base.html' %}
+
+{% block title %}Hồ Sơ Cá Nhân - Amazon AI{% endblock %}
+
+{% block content %}
+<div class="container-fluid py-3" style="max-width: 1440px; padding-left: 1.5rem; padding-right: 1.5rem;">
+    <div class="row g-4 align-items-stretch">
+
+        <div class="col-xl-3 col-lg-4 col-md-5 d-flex flex-column">
+            <div class="card border-0 shadow-sm rounded-3 bg-white p-3 d-flex flex-column h-100">
+                <div class="text-center pt-2 pb-3 border-bottom mb-3">
+                    <div class="position-relative d-inline-block mx-auto mb-2">
+                        <div class="bg-light rounded-circle d-flex align-items-center justify-content-center border border-2" style="width: 85px; height: 85px;">
+                            <i class="bi bi-person-fill text-secondary fs-1"></i>
+                        </div>
+                        <span class="position-absolute bottom-0 end-0 badge bg-dark rounded-circle p-2 border border-white" style="cursor: pointer;" title="Đổi ảnh đại diện">
+                            <i class="bi bi-camera-fill small"></i>
+                        </span>
+                    </div>
+                    <h5 class="fw-bold mb-1 text-dark">{{ user.full_name }}</h5>
+                    <p class="text-muted small mb-2">@{{ user.username }}</p>
+                    <span class="badge bg-success-subtle text-success rounded-pill px-3 py-1 small fw-semibold mx-auto">
+                        <i class="bi bi-shield-check me-1"></i>Khách hàng Thân thiết
+                    </span>
+                </div>
+
+                <div class="bg-light rounded-3 p-3 mb-3">
+                    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.9rem;">
+                        <span class="text-secondary"><i class="bi bi-wallet2 me-2 text-warning"></i>Ví Amazon Pay</span>
+                        <span class="fw-bold text-dark">$0.00</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between border-bottom pb-2 mb-2" style="font-size: 0.9rem;">
+                        <span class="text-secondary"><i class="bi bi-coin me-2 text-warning"></i>Xu tích lũy</span>
+                        <span class="fw-bold text-dark">200 xu</span>
+                    </div>
+                    <div class="d-flex align-items-center justify-content-between" style="font-size: 0.9rem;">
+                        <span class="text-secondary"><i class="bi bi-ticket-perforated me-2 text-danger"></i>Voucher của tôi</span>
+                        <span class="badge bg-danger rounded-pill">3 mã</span>
+                    </div>
+                </div>
+
+                <div class="list-group list-group-flush border-0 flex-grow-1 d-flex flex-column">
+                    <a href="/profile" class="list-group-item list-group-item-action active rounded-2 py-2 mb-1 border-0 d-flex align-items-center" style="background-color: #131921; font-size: 0.95rem;">
+                        <i class="bi bi-person-vcard-fill me-3 fs-5"></i> Hồ sơ cá nhân
+                    </a>
+                    <a href="{{ url_for('order.view_orders') }}" class="list-group-item list-group-item-action rounded-2 py-2 mb-1 border-0 text-dark d-flex align-items-center" style="font-size: 0.95rem;">
+                        <i class="bi bi-box-seam-fill me-3 fs-5 text-secondary"></i> Đơn hàng của tôi
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action rounded-2 py-2 mb-1 border-0 text-dark d-flex align-items-center" style="font-size: 0.95rem;">
+                        <i class="bi bi-geo-alt-fill me-3 fs-5 text-secondary"></i> Sổ địa chỉ nhận hàng
+                    </a>
+                    <a href="#" class="list-group-item list-group-item-action rounded-2 py-2 mb-2 border-0 text-dark d-flex align-items-center" style="font-size: 0.95rem;">
+                        <i class="bi bi-bell-fill me-3 fs-5 text-secondary"></i> Thông báo hệ thống
+                    </a>
+                    <a href="{{ url_for('auth.logout') }}" class="list-group-item list-group-item-action rounded-2 py-2 border-0 text-danger fw-semibold border-top mt-auto d-flex align-items-center" style="font-size: 0.95rem;">
+                        <i class="bi bi-box-arrow-right me-3 fs-5"></i> Đăng xuất tài khoản
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-xl-9 col-lg-8 col-md-7">
+            <div class="row g-4 h-100">
+
+                <div class="col-xl-7 col-12 d-flex flex-column">
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-4 flex-grow-1">
+                        <div class="border-bottom pb-2 mb-3">
+                            <h5 class="fw-bold text-dark mb-1">Quản lý thông tin tài khoản</h5>
+                            <p class="text-muted small mb-0">Cập nhật thông tin cơ bản và cấu hình bảo mật tài khoản</p>
+                        </div>
+                        <form>
+                            <div class="row g-3">
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Tên đăng nhập (Username)</label>
+                                    <input type="text" class="form-control bg-light fw-medium text-muted p-2" style="font-size: 0.9rem;" value="{{ user.username }}" readonly>
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Họ và Tên</label>
+                                    <input type="text" class="form-control p-2" style="font-size: 0.9rem;" value="{{ user.full_name }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Địa chỉ Email</label>
+                                    <input type="email" class="form-control p-2" style="font-size: 0.9rem;" value="{{ user.email }}">
+                                </div>
+                                <div class="col-md-6">
+                                    <label class="form-label text-secondary small fw-bold mb-1">Số điện thoại</label>
+                                    <input type="tel" class="form-control p-2" style="font-size: 0.9rem;" value="{{ user.phone or '' }}" placeholder="Chưa liên kết SĐT">
+                                </div>
+                                <div class="col-12">
+                                    <div class="p-2 border rounded bg-light d-flex align-items-center" style="font-size: 0.85rem;">
+                                        <i class="bi bi-calendar-check text-primary me-2 ms-1"></i>
+                                        <span class="text-muted">Thời gian thiết lập tài khoản:</span>
+                                        <strong class="text-dark ms-1">{{ user.created_at.strftime('%d/%m/%Y lúc %H:%M') if user.created_at else 'Chưa xác định' }}</strong>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="mt-3 pt-2 border-top d-flex gap-2">
+                                <button type="button" class="btn btn-sm px-3 fw-semibold" style="background-color: #ffd814; border-color: #fcd200; color: #0f1111;"><i class="bi bi-save me-1"></i>Lưu thay đổi</button>
+                                <button type="button" class="btn btn-sm btn-outline-danger px-3 fw-semibold"><i class="bi bi-key me-1"></i>Đổi mật khẩu</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+
+                <div class="col-xl-5 col-12 d-flex flex-column">
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-4 flex-grow-1">
+                        <div class="border-bottom pb-2 mb-3">
+                            <h5 class="fw-bold text-dark mb-1">Lịch sử Đơn hàng Gần đây</h5>
+                            <p class="text-muted small mb-0">Các đơn hàng mới nhất của bạn</p>
+                        </div>
+                        <div class="table-responsive">
+                            {% if recent_orders %}
+                                <table class="table table-sm table-borderless align-middle mb-0" style="font-size: 0.85rem;">
+                                    <thead>
+                                        <tr class="text-muted border-bottom" style="font-size: 0.8rem;">
+                                            <th>Mã đơn</th>
+                                            <th>Ngày đặt</th>
+                                            <th>Tổng tiền</th>
+                                            <th class="text-end">Trạng thái & Thao tác</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        {% for order in recent_orders %}
+                                        <tr>
+                                            <td><strong>#{{ order.order_id }}</strong></td>
+                                            <td class="text-muted">{{ order.created_at.strftime('%d/%m/%Y') if order.created_at else '' }}</td>
+
+                                            <td class="fw-bold text-nowrap">${{ "{:,.2f}".format(order.total_amount) }}</td>
+
+                                            <td class="text-end text-nowrap">
+                                                {% if order.status == 'DELIVERED' %}
+                                                    <span class="badge bg-success-subtle text-success rounded-pill px-2">Hoàn thành</span>
+                                                {% elif order.status == 'SHIPPING' %}
+                                                    <span class="badge bg-primary-subtle text-primary rounded-pill px-2">Đang giao</span>
+                                                {% elif order.status == 'PROCESSING' %}
+                                                    <span class="badge bg-info-subtle text-info rounded-pill px-2">Đang chuẩn bị</span>
+                                                {% elif order.status == 'CANCELLED' %}
+                                                    <span class="badge bg-danger-subtle text-danger rounded-pill px-2">Đã hủy</span>
+                                                {% elif order.status == 'RETURN_REQUESTED' %}
+                                                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2">Chờ duyệt trả</span>
+                                                {% elif order.status == 'RETURNED' %}
+                                                    <span class="badge bg-secondary-subtle text-secondary rounded-pill px-2">Đã trả hàng</span>
+                                                {% else %}
+                                                    <span class="badge bg-warning-subtle text-warning rounded-pill px-2">Chờ xử lý</span>
+                                                {% endif %}
+
+                                                {% if order.status == 'PENDING' %}
+                                                    <div class="mt-1">
+                                                        <form action="{{ url_for('order.customer_cancel_order', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                                            <button type="submit" class="btn btn-sm btn-outline-danger py-0 px-1 rounded" style="font-size: 0.7rem;" onclick="return confirm('Bạn có chắc chắn muốn hủy đơn hàng này không?');">
+                                                                Hủy
+                                                            </button>
+                                                        </form>
+                                                        {% if order.payment_method == 'MOMO' %}
+                                                            <a href="{{ url_for('order.pay_with_momo', order_id=order.order_id) }}" class="btn btn-sm text-white py-0 px-1 ms-1 rounded fw-medium" style="background-color: #a50064; font-size: 0.7rem;">
+                                                                Pay
+                                                            </a>
+                                                        {% endif %}
+                                                    </div>
+                                                {% elif order.status == 'DELIVERED' %}
+                                                    <div class="mt-1">
+                                                        <form action="{{ url_for('order.customer_request_return', order_id=order.order_id) }}" method="POST" class="d-inline">
+                                                            <button type="submit" class="btn btn-sm btn-outline-warning text-dark py-0 px-1 rounded fw-medium" style="font-size: 0.7rem;" onclick="return confirm('Bạn muốn yêu cầu trả hàng cho đơn này?');">
+                                                                Trả hàng
+                                                            </button>
+                                                        </form>
+                                                    </div>
+                                                {% endif %}
+                                            </td>
+                                        </tr>
+                                        {% endfor %}
+                                    </tbody>
+                                </table>
+                            {% else %}
+                                <div class="text-center py-4 text-muted">
+                                    <i class="bi bi-box2 fs-2 d-block mb-2 opacity-50"></i>
+                                    <small>Bạn chưa có đơn hàng nào.</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-7 col-12 d-flex flex-column">
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-4 flex-grow-1">
+                        <div class="d-flex justify-content-between align-items-center mb-3">
+                            <h5 class="fw-bold text-dark mb-0">Đề xuất Sản phẩm cho Bạn</h5>
+                            <a href="/" class="small text-decoration-none text-primary">Xem thêm</a>
+                        </div>
+
+                        <div class="row g-2">
+                            {% if recommended_products %}
+                                {% for product in recommended_products %}
+                                <div class="col-3 text-center border rounded-2 p-2 bg-light-subtle position-relative d-flex flex-column justify-content-between">
+                                    <a href="/product/{{ product.product_id }}" class="stretched-link text-decoration-none text-dark">
+                                        <img src="{{ product.image_url }}" class="img-fluid rounded mb-2" style="height: 70px; object-fit: contain;">
+                                        <div class="text-truncate small fw-bold" title="{{ product.name }}">{{ product.name }}</div>
+
+                                        <div class="text-danger small fw-bold">${{ "{:,.2f}".format(product.price) }}</div>
+                                    </a>
+                                </div>
+                                {% endfor %}
+                            {% else %}
+                                <div class="col-12 text-center py-3 text-muted">
+                                    <small>Hệ thống AI đang học sở thích của bạn...</small>
+                                </div>
+                            {% endif %}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="col-xl-5 col-12 d-flex flex-column">
+                    <div class="card border-0 shadow-sm rounded-3 bg-white p-4 flex-grow-1">
+                        <h5 class="fw-bold text-dark mb-3">Dịch vụ Khách hàng & Hỗ trợ</h5>
+                        <div class="d-flex flex-column gap-2" style="font-size: 0.9rem;">
+                            <a href="#" class="text-decoration-none d-flex align-items-center p-2 rounded border bg-light-subtle text-dark hover-shadow transition">
+                                <div class="badge bg-primary-subtle text-primary p-2 me-3 rounded-circle"><i class="bi bi-question-circle fs-5"></i></div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.85rem;">Câu hỏi thường gặp</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Tra cứu nhanh các vấn đề phổ biến</div>
+                                </div>
+                            </a>
+                            <a href="#" class="text-decoration-none d-flex align-items-center p-2 rounded border bg-light-subtle text-dark hover-shadow transition">
+                                <div class="badge bg-danger-subtle text-danger p-2 me-3 rounded-circle"><i class="bi bi-arrow-counterclockwise fs-5"></i></div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.85rem;">Yêu cầu Trả hàng</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Quy trình đổi trả và hoàn tiền</div>
+                                </div>
+                            </a>
+                            <a href="#" class="text-decoration-none d-flex align-items-center p-2 rounded border bg-light-subtle text-dark hover-shadow transition">
+                                <div class="badge bg-success-subtle text-success p-2 me-3 rounded-circle"><i class="bi bi-chat-dots fs-5"></i></div>
+                                <div>
+                                    <div class="fw-bold" style="font-size: 0.85rem;">Trò chuyện Trực tuyến</div>
+                                    <div class="text-muted" style="font-size: 0.75rem;">Chat với nhân viên chăm sóc khách hàng</div>
+                                </div>
+                            </a>
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

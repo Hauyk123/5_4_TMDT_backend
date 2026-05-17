@@ -1,0 +1,222 @@
+{% extends 'admin/admin_base.html' %}
+
+{% block title %}Quản Lý Mã Khuyến Mãi (Voucher) - Admin Dashboard{% endblock %}
+{% block page_title %}Quản Lý Mã Khuyến Mãi (Voucher){% endblock %}
+
+{% block content %}
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4 mb-4">
+    <div class="d-flex justify-content-between align-items-center mb-3 pb-2 border-bottom">
+        <h5 class="fw-bold text-dark mb-0">
+            <i class="bi bi-ticket-perforated-fill me-2 text-warning"></i> Danh sách Voucher hệ thống
+        </h5>
+        <button class="btn btn-sm fw-bold px-3" style="background-color: #febd69; color: #111;" onclick="focusCreateForm()">
+            <i class="bi bi-plus-lg me-1"></i> Tạo mã mới
+        </button>
+    </div>
+
+    <div class="table-responsive">
+        <table class="table table-hover align-middle border-light">
+            <thead class="table-light text-secondary small text-uppercase">
+                <tr>
+                    <th>Mã Code</th>
+                    <th>Loại Giảm</th>
+                    <th>Giá Trị</th>
+                    <th>Đơn Tối Thiểu</th>
+                    <th>Giảm Tối Đa</th>
+                    <th>Lượt Dùng (Đã dùng/Tổng)</th>
+                    <th>Ngày Hết Hạn</th>
+                    <th>Trạng Thái</th>
+                    <th class="text-end">Hành động</th>
+                </tr>
+            </thead>
+            <tbody class="small fw-medium">
+                {% if vouchers %}
+                    {% for v in vouchers %}
+                    <tr>
+                        <td><span class="badge bg-dark px-2 py-1 font-monospace fs-6">{{ v.code }}</span></td>
+                        <td>
+                            {% if v.discount_type == 'PERCENT' %}
+                                <span class="badge bg-info-subtle text-info px-2 py-1">Phần trăm (%)</span>
+                            {% else %}
+                                <span class="badge bg-success-subtle text-success px-2 py-1">Cố định ($)</span>
+                            {% endif %}
+                        </td>
+                        <td class="fw-bold text-danger">
+                            {{ "{:,.2f}".format(v.discount_value) }}{% if v.discount_type == 'PERCENT' %}%{% else %}${% endif %}
+                        </td>
+                        <td>${{ "{:,.2f}".format(v.min_order_value) }}</td>
+                        <td>
+                            {% if v.max_discount %}
+                                ${{ "{:,.2f}".format(v.max_discount) }}
+                            {% else %}
+                                <span class="text-muted fst-italic">Không giới hạn</span>
+                            {% endif %}
+                        </td>
+                        <td>
+                            <div class="d-flex align-items-center gap-2">
+                                <span>{{ v.used_count }} / {{ v.usage_limit }}</span>
+                                <div class="progress flex-grow-1" style="height: 5px; min-width: 50px;">
+                                    {% set percent = (v.used_count / v.usage_limit * 100) | int %}
+                                    <div class="progress-bar bg-warning" style="width: {{ percent }}%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>{{ v.end_date.strftime('%d/%m/%Y') if v.end_date else 'N/A' }}</td>
+                        <td>
+                            {% if v.status == 'ACTIVE' and (not v.end_date or v.end_date >= current_time) and v.used_count < v.usage_limit %}
+                                <span class="badge bg-success rounded-pill px-2 py-1">Đang chạy</span>
+                            {% else %}
+                                <span class="badge bg-secondary rounded-pill px-2 py-1">Hết hạn/Dừng</span>
+                            {% endif %}
+                        </td>
+                        <td class="text-end">
+                            <div class="d-inline-flex gap-2">
+                                <button class="btn btn-sm btn-outline-primary" title="Sửa mã"
+                                        onclick="editVoucher('{{ v.voucher_id }}', '{{ v.code }}', '{{ v.usage_limit }}', '{{ v.discount_type }}', '{{ v.discount_value }}', '{{ v.min_order_value }}', '{{ v.max_discount if v.max_discount else '' }}', '{{ v.end_date.strftime('%Y-%m-%d') if v.end_date else '' }}')">
+                                    <i class="bi bi-pencil-square"></i>
+                                </button>
+                                <form action="/admin/voucher/delete/{{ v.voucher_id }}" method="POST" class="m-0" onsubmit="return confirm('Bạn có chắc chắn muốn xóa mã {{ v.code }} không?');">
+                                    <button type="submit" class="btn btn-sm btn-outline-danger" title="Xóa mã">
+                                        <i class="bi bi-trash-fill"></i>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                {% else %}
+                    <tr>
+                        <td colspan="9" class="text-center py-4 text-muted fst-italic">Hệ thống chưa cấu hình mã giảm giá nào.</td>
+                    </tr>
+                {% endif %}
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card border-0 shadow-sm rounded-4 bg-white p-4" style="max-width: 800px; margin: 0 auto;" id="voucherFormContainer">
+    <div class="mb-3 pb-2 border-bottom">
+        <h5 class="fw-bold text-dark mb-0" id="formTitle">
+            <i class="bi bi-plus-circle-fill me-2 text-success"></i> Thêm mã khuyến mãi mới
+        </h5>
+    </div>
+
+    <form method="POST" action="/admin/voucher/create" id="voucherForm">
+        <input type="hidden" name="voucher_id" id="formVoucherId" value="">
+
+        <div class="row g-3">
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Mã Voucher (Ví dụ: SALE2026) *</label>
+                <input type="text" class="form-control font-monospace fw-bold" name="code" id="formCode" required style="text-transform: uppercase;">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Giới hạn tổng lượt dùng *</label>
+                <input type="number" class="form-control" name="usage_limit" id="formLimit" value="100" min="1" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Loại giảm giá *</label>
+                <select class="form-select fw-semibold" name="discount_type" id="discountType" required>
+                    <option value="PERCENT">Theo phần trăm (%)</option>
+                    <option value="FIXED">Trừ tiền cố định ($)</option>
+                </select>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Giá trị giảm *</label>
+                <input type="number" step="0.01" class="form-control fw-bold text-danger" name="discount_value" id="formValue" placeholder="VD: 20" required>
+            </div>
+
+            <div class="col-md-4">
+                <label class="form-label fw-bold small text-secondary">Giảm tối đa (USD)</label>
+                <input type="number" step="0.01" class="form-control" name="max_discount" id="maxDiscount" placeholder="Để trống nếu không giới hạn">
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Đơn tối thiểu để áp dụng (USD)</label>
+                <input type="number" step="0.01" class="form-control" name="min_order_value" id="formMinOrder" value="0" required>
+            </div>
+
+            <div class="col-md-6">
+                <label class="form-label fw-bold small text-secondary">Ngày hết hạn *</label>
+                <input type="date" class="form-control" name="end_date" id="formEndDate" required>
+            </div>
+        </div>
+
+        <div class="mt-4 pt-3 border-top d-flex justify-content-between align-items-center">
+            <button type="button" class="btn btn-sm btn-outline-secondary rounded-pill px-3 d-none" id="btnCancelEdit" onclick="resetToCreateMode()">
+                <i class="bi bi-x-circle me-1"></i> Hủy chế độ sửa
+            </button>
+            <button type="submit" class="btn px-4 fw-semibold shadow-sm ms-auto" id="btnSubmitForm" style="background-color: #febd69; color: #111;">
+                <i class="bi bi-save me-2"></i> Kích hoạt Mã ngay
+            </button>
+        </div>
+    </form>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const discountSelect = document.getElementById('discountType');
+    const maxDiscountInput = document.getElementById('maxDiscount');
+
+    // 1. Kiểm soát ô Giảm tối đa tùy thuộc loại Voucher
+    discountSelect.addEventListener('change', function() {
+        checkMaxDiscountStatus(this.value);
+    });
+
+    function checkMaxDiscountStatus(type) {
+        if (type === 'FIXED') {
+            maxDiscountInput.value = '';
+            maxDiscountInput.disabled = true;
+            maxDiscountInput.classList.add('bg-light');
+            maxDiscountInput.placeholder = "Không khả dụng với tiền cố định";
+        } else {
+            maxDiscountInput.disabled = false;
+            maxDiscountInput.classList.remove('bg-light');
+            maxDiscountInput.placeholder = "Để trống nếu không giới hạn";
+        }
+    }
+
+    // 2. CHUYỂN FORM SANG CHẾ ĐỘ SỬA VÀ ĐỔ DỮ LIỆU LÊN
+    function editVoucher(id, code, limit, type, value, minOrder, maxDiscount, endDate) {
+        document.getElementById('formTitle').innerHTML = '<i class="bi bi-pencil-square me-2 text-primary"></i> Cập nhật thông tin Voucher';
+        document.getElementById('formVoucherId').value = id;
+        document.getElementById('formCode').value = code;
+        document.getElementById('formLimit').value = limit;
+        document.getElementById('discountType').value = type;
+        document.getElementById('formValue').value = value;
+        document.getElementById('formMinOrder').value = minOrder;
+        document.getElementById('formEndDate').value = endDate;
+
+        // Cập nhật ô max_discount
+        maxDiscountInput.value = maxDiscount;
+        checkMaxDiscountStatus(type);
+
+        // Đổi action của form về luồng UPDATE
+        document.getElementById('voucherForm').action = "/admin/voucher/update";
+        document.getElementById('btnSubmitForm').innerHTML = '<i class="bi bi-arrow-clockwise me-2"></i> Cập nhật thay đổi';
+        document.getElementById('btnCancelEdit').classList.remove('d-none');
+
+        // Cuộn màn hình xuống khu vực form điền
+        focusCreateForm();
+    }
+
+    // 3. HỦY CHẾ ĐỘ SỬA -> QUAY VỀ THÊM MỚI
+    function resetToCreateMode() {
+        document.getElementById('formTitle').innerHTML = '<i class="bi bi-plus-circle-fill me-2 text-success"></i> Thêm mã khuyến mãi mới';
+        document.getElementById('formVoucherId').value = "";
+        document.getElementById('voucherForm').reset();
+        checkMaxDiscountStatus('PERCENT');
+
+        document.getElementById('voucherForm').action = "/admin/voucher/create";
+        document.getElementById('btnSubmitForm').innerHTML = '<i class="bi bi-save me-2"></i> Kích hoạt Mã ngay';
+        document.getElementById('btnCancelEdit').classList.add('d-none');
+    }
+
+    function focusCreateForm() {
+        document.getElementById('voucherFormContainer').scrollIntoView({ behavior: 'smooth' });
+    }
+</script>
+{% endblock %}
