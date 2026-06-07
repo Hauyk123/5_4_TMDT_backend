@@ -212,43 +212,109 @@ def index():
                            today_recs=get_random_products_mysql(12))
 
 
+
+
 @main_bp.route('/search')
 def search():
+    """Hàm xử lý tìm kiếm sản phẩm kết hợp Bộ lọc nâng cao và Sắp xếp"""
+    # 1. Hứng toàn bộ tham số từ form giao diện truyền lên URL
     query = request.args.get('q', '').strip()
     page = request.args.get('page', 1, type=int)
-    sort_by = request.args.get('sort', 'relevance')
-    per_page, offset = 12, (page - 1) * 12
+    sort = request.args.get('sort', 'relevance')
+
+    # Hứng tham số bộ lọc (ép kiểu float/int an toàn)
+    min_price = request.args.get('min_price', type=float)
+    max_price = request.args.get('max_price', type=float)
+    rating = request.args.get('rating', type=int)
+
+    per_page = 12  # Số sản phẩm trên 1 trang
 
     conn = get_mysql_connection()
     cursor = conn.cursor(dictionary=True)
     try:
-        cursor.execute("SELECT COUNT(*) as total FROM PRODUCT WHERE name LIKE %s", (f"%{query}%",))
-        total_products = cursor.fetchone()['total']
+        # 2. Xây dựng câu SQL nền tảng (Luôn bỏ qua các sản phẩm giá 0 hoặc bị khóa)
+        base_sql = "FROM PRODUCT WHERE (price > 0 OR price IS NOT NULL)"
+        # Nếu bảng có cột status, thêm vào: base_sql += " AND status = 'ACTIVE'"
+        params = []
 
-        order_clause = "ORDER BY product_id"
-        if sort_by == 'price_asc':
-            order_clause = "ORDER BY price ASC"
-        elif sort_by == 'price_desc':
-            order_clause = "ORDER BY price DESC"
+        # -- Nối điều kiện: Từ khóa tìm kiếm --
+        if query:
+            base_sql += " AND name LIKE %s"
+            params.append(f"%{query}%")
 
-        cursor.execute(
-            f"SELECT product_id as _id, name as title, price, image_url, avg_rating FROM PRODUCT WHERE name LIKE %s {order_clause} LIMIT %s OFFSET %s",
-            (f"%{query}%", per_page, offset))
+        # -- Nối điều kiện: Bộ lọc khoảng giá --
+        if min_price is not None:
+            base_sql += " AND price >= %s"
+            params.append(min_price)
+        if max_price is not None:
+            base_sql += " AND price <= %s"
+            params.append(max_price)
+
+        # -- Nối điều kiện: Bộ lọc đánh giá sao --
+        if rating is not None:
+            # Chú ý tên cột đánh giá, ở đây giả sử là avg_rating
+            base_sql += " AND avg_rating >= %s"
+            params.append(rating)
+
+        # 3. Xử lý Sắp xếp (Sorting)
+        order_clause = ""
+        if sort == 'price_asc':
+            order_clause = " ORDER BY price ASC"
+        elif sort == 'price_desc':
+            order_clause = " ORDER BY price DESC"
+        elif sort == 'review_desc':
+            # Sắp xếp theo số lượt mua hoặc số sao
+            order_clause = " ORDER BY avg_rating DESC"
+        else:
+            # Mặc định relevance (sản phẩm mới nhất hoặc khớp nhất)
+            order_clause = " ORDER BY product_id DESC"
+
+        # 4. Đếm tổng số sản phẩm THỎA MÃN BỘ LỌC để phân trang
+        count_sql = "SELECT COUNT(product_id) as total " + base_sql
+        cursor.execute(count_sql, tuple(params))
+        total_products = cursor.fetchone()['total'] or 0
+
+        # Tính toán tham số phân trang
+        total_pages = math.ceil(total_products / per_page) if total_products > 0 else 1
+        if page < 1: page = 1
+        if page > total_pages: page = total_pages
+        offset = (page - 1) * per_page
+
+        # 5. Truy vấn dữ liệu thực tế đẩy ra giao diện
+        # Chú ý: Đổi tên cột cho khớp với biến trong HTML (product_id as _id, name as title)
+        fetch_sql = f"""
+            SELECT product_id as _id, name as title, price, image_url, avg_rating 
+            {base_sql} 
+            {order_clause} 
+            LIMIT %s OFFSET %s
+        """
+        fetch_params = params + [per_page, offset]
+
+        cursor.execute(fetch_sql, tuple(fetch_params))
         results = cursor.fetchall()
-        for r in results:
-            r['images'] = [r['image_url']]
-            r['average_rating'] = r.get('avg_rating', 4.5)
 
-        if query and page == 1 and col_search_logs is not None:
-            col_search_logs.update_one({"term": query.lower()}, {"$inc": {"count": 1}}, upsert=True)
+        # Lấy lịch sử xem gần đây từ session (Nếu kĩ sư đã làm logic này)
+        history = session.get('recently_viewed', [])
 
-        return render_template('search_results.html', query=query, results=results, page=page,
-                               total_pages=math.ceil(total_products / per_page), total_products=total_products)
+        # 6. Truyền TRẢ LẠI các biến bộ lọc xuống giao diện để HTML giữ nguyên lựa chọn của khách
+        return render_template('search_results.html',
+                               query=query,
+                               results=results,
+                               total_products=total_products,
+                               page=page,
+                               total_pages=total_pages,
+                               current_sort=sort,
+                               current_min_price=min_price,
+                               current_max_price=max_price,
+                               current_rating=rating,
+                               history=history)
+
+    except Exception as e:
+        print(f"❌ Lỗi tìm kiếm / lọc sản phẩm: {e}")
+        return redirect(url_for('main.index'))
     finally:
         cursor.close()
         conn.close()
-
-
 @main_bp.route('/product/<product_id>')
 def product_detail(product_id):
     conn = get_mysql_connection()

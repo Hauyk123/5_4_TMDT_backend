@@ -53,12 +53,43 @@
     .rec-title:hover { color: #B12704; }
     .rec-price { color: #B12704; font-weight: 700; font-size: 1.1rem; }
     .hidden-rec { display: none; }
+
+    /* ================================================== */
+    /* ĐÃ BỔ SUNG: KHÓA TRỤC X & RESPONSIVE MOBILE TỐI ƯU */
+    /* ================================================== */
+
+    /* Khóa cứng trục ngang toàn bộ web */
+    html, body { overflow-x: hidden !important; max-width: 100vw; }
+
+    /* Chặn vỡ layout do âm margin của Bootstrap row */
+    .product-section { overflow-x: hidden; }
+
+    /* Responsive Mobile */
+    @media (max-width: 767.98px) {
+        .product-section { padding: 15px; margin-top: 10px; }
+        .product-title { font-size: 1.3rem; }
+        .img-container { height: 260px; } /* Thu nhỏ khung ảnh */
+
+        /* Ép Control Bar gập dọc xuống */
+        .control-bar { flex-direction: column; align-items: stretch; gap: 15px; padding: 15px; }
+        .control-bar > .d-flex { width: 100%; flex-direction: column; align-items: stretch !important; gap: 10px !important; }
+        .control-bar form { width: 100%; border: none !important; padding: 0 !important; }
+        .form-select-custom { min-width: 100% !important; width: 100%; text-align: center; }
+
+        /* Sắp xếp lại Cột Đánh giá */
+        .review-card .d-flex.justify-content-between { flex-direction: column; gap: 10px; }
+        .review-card .text-end { text-align: left !important; padding-left: 55px; }
+
+        /* Cân đối Grid Sản phẩm Gợi ý */
+        #recommendationList.row-cols-2 > * { padding-left: 8px; padding-right: 8px; }
+        .rec-img-box { height: 140px; padding: 10px; }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="product-section">
-    <div class="row g-5">
+    <div class="row g-4 g-lg-5">
         <div class="col-lg-4 col-md-5">
             <div class="img-container border">
                 {% if product.images and product.images[0] %}
@@ -166,19 +197,19 @@
 
 <div class="control-bar position-sticky" style="top: 75px; z-index: 1020;">
     <div class="d-flex align-items-center gap-3">
-        <div class="bg-white bg-opacity-10 p-2 rounded-circle text-white border border-white border-opacity-25">
+        <div class="bg-white bg-opacity-10 p-2 rounded-circle text-white border border-white border-opacity-25 d-none d-md-block">
             <i class="bi bi-cpu fs-4"></i>
         </div>
-        <div class="d-none d-md-block">
-            <div class="fw-bold fs-5">Bộ lọc Gợi ý AI</div>
-            <div class="small text-white-50">Đổi mô hình thuật toán</div>
+        <div>
+            <div class="fw-bold fs-5 text-center text-md-start">Bộ lọc Gợi ý AI</div>
+            <div class="small text-white-50 text-center text-md-start">Đổi mô hình thuật toán</div>
         </div>
     </div>
 
-    <div class="d-flex align-items-center gap-3">
+    <div class="d-flex align-items-center gap-3 w-100 justify-content-md-end">
         <form action="/product/{{ product._id }}" method="GET" class="d-flex align-items-center m-0">
             <input type="hidden" name="page" value="1">
-            <select name="model" class="form-select-custom shadow-sm" style="min-width: 200px;" onchange="this.form.submit()">
+            <select name="model" class="form-select-custom shadow-sm" onchange="this.form.submit()">
                 <option value="hybrid" {% if selected_model == 'hybrid' %}selected{% endif %}>🚀 Hybrid (Kết hợp)</option>
                 <option value="bert" {% if selected_model == 'bert' %}selected{% endif %}>✨ Content Based</option>
                 <option value="svd" {% if selected_model == 'svd' %}selected{% endif %}>🤝 Collaborative</option>

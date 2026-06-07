@@ -2,7 +2,7 @@
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>{% block title %}Sàn TMĐT Đồ Gia Dụng{% endblock %}</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
@@ -10,7 +10,6 @@
 
     <style>
         body { font-family: 'Inter', sans-serif; background-color: #f0f2f5; color: #1f2937; }
-        /* --- NAVBAR --- */
         .navbar { background-color: #131921 !important; padding: 12px 0; z-index: 1030; }
         .form-control:focus { box-shadow: none; border-color: #ff9900; }
         #suggestionBox { top: 100%; border-radius: 0 0 12px 12px; border: 1px solid #ddd; border-top: none; z-index: 1050; max-height: 400px; overflow-y: auto; }
@@ -23,30 +22,64 @@
         .btn-quick-cart:hover { background-color: #f7ca00; transform: scale(1.1); }
         .price { color: #B12704; font-weight: 700; }
 
-        /* --- VOUCHER MENU --- */
         .voucher-dropdown { min-width: 320px; padding: 15px; border-radius: 12px; }
         .voucher-item { border: 1px dashed #ff9900; border-radius: 8px; padding: 12px; margin-bottom: 10px; background-color: #fffaf0; position: relative; }
         .voucher-code { background: #ff9900; color: white; padding: 2px 8px; border-radius: 4px; font-weight: bold; font-family: monospace; letter-spacing: 1px; }
         .voucher-btn { position: absolute; right: 12px; top: 50%; transform: translateY(-50%); font-size: 0.8rem; font-weight: bold; padding: 4px 12px; border-radius: 50px; }
+
+        /* ========================================= */
+        /* CSS MOBILE WEB & BOTTOM NAVIGATION BAR    */
+        /* ========================================= */
+        .bottom-nav {
+            position: fixed;
+            bottom: 0; left: 0; right: 0;
+            background-color: #ffffff;
+            box-shadow: 0 -2px 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: space-around;
+            padding: 8px 0 5px 0;
+            z-index: 1040;
+            border-top: 1px solid #e3e6e8;
+        }
+        .bottom-nav-item {
+            text-align: center;
+            color: #6c757d;
+            text-decoration: none;
+            font-size: 0.7rem;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            transition: 0.2s;
+        }
+        .bottom-nav-item i { font-size: 1.4rem; margin-bottom: 2px; }
+        .bottom-nav-item.active, .bottom-nav-item:hover { color: #febd69; font-weight: bold; }
+
+        /* Căn chỉnh cho thiết bị di động (<= 991px) */
+        @media (max-width: 991px) {
+            body { padding-bottom: 65px; } /* Chừa không gian cho bottom nav để không đè lên footer/content */
+            .mobile-hide { display: none !important; } /* Class ẩn bớt các nút thừa trên Navbar khi ở Mobile */
+            .navbar-brand { font-size: 1.2rem !important; margin-right: 10px !important; }
+            .search-form-mobile { margin: 0; width: 100%; }
+        }
     </style>
     {% block extra_styles %}{% endblock %}
 </head>
 <body class="d-flex flex-column min-height-100" style="min-height: 100vh;">
 
 <nav class="navbar navbar-expand-lg navbar-dark shadow-sm sticky-top">
-  <div class="container-fluid px-lg-5">
-    <a class="navbar-brand fw-bold text-white me-4 fs-4" href="/">Gia Dụng <span style="color: #febd69;">Việt</span></a>
-    <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav"><span class="navbar-toggler-icon"></span></button>
+  <div class="container-fluid px-lg-5 d-flex align-items-center justify-content-between">
 
-    <div class="collapse navbar-collapse" id="navbarNav">
-      <div class="position-relative flex-grow-1 mx-lg-4 my-2 my-lg-0" style="max-width: 600px;">
-          <form class="d-flex" action="/search" method="GET" id="searchForm">
-            <input class="form-control rounded-start border-0 px-3" type="search" name="q" id="searchInput" placeholder="Tìm kiếm tủ lạnh, máy giặt, tivi..." autocomplete="off" required>
-            <button class="btn rounded-end px-4" type="submit" style="background-color: #febd69; color: #111; font-weight: 600;"><i class="bi bi-search"></i></button>
-          </form>
-          <div id="suggestionBox" class="list-group position-absolute w-100 shadow mt-0" style="display: none;"></div>
-      </div>
+    <a class="navbar-brand fw-bold text-white fs-4" href="/">Gia Dụng <span style="color: #febd69;">Việt</span></a>
 
+    <div class="position-relative flex-grow-1 mx-2 mx-lg-4 search-form-mobile" style="max-width: 600px;">
+        <form class="d-flex" action="/search" method="GET" id="searchForm">
+        <input class="form-control rounded-start border-0 px-2 px-lg-3" type="search" name="q" id="searchInput" placeholder="Tìm kiếm..." autocomplete="off" required style="font-size: 0.95rem;">
+        <button class="btn rounded-end px-3 px-lg-4" type="submit" style="background-color: #febd69; color: #111; font-weight: 600;"><i class="bi bi-search"></i></button>
+        </form>
+        <div id="suggestionBox" class="list-group position-absolute w-100 shadow mt-0" style="display: none;"></div>
+    </div>
+
+    <div class="collapse navbar-collapse mobile-hide" id="navbarNav">
       <ul class="navbar-nav ms-auto align-items-center">
         <li class="nav-item dropdown me-2">
             <a class="nav-link text-white fw-bold d-flex align-items-center" href="#" data-bs-toggle="dropdown" id="voucherMenuBtn">
@@ -54,7 +87,6 @@
             </a>
             <div class="dropdown-menu dropdown-menu-end shadow border-0 mt-2 voucher-dropdown" id="voucherListContainer">
                 <h6 class="fw-bold text-dark border-bottom pb-2 mb-3"><i class="bi bi-tags-fill me-2 text-danger"></i>Mã giảm giá hôm nay</h6>
-
                 <div id="voucherListItems">
                     <div class="text-center py-3">
                         <div class="spinner-border text-warning spinner-border-sm" role="status"></div>
@@ -70,7 +102,7 @@
                 <span id="cartBadgeCount" class="position-absolute top-10 start-100 translate-middle badge rounded-pill text-dark" style="background-color: #febd69; font-size: 0.7rem; margin-top: 5px; margin-left: -5px;">
                     {{ session.get('cart', {}).values() | sum }}
                 </span>
-                <span class="ms-1 fw-bold d-none d-lg-block">Giỏ hàng</span>
+                <span class="ms-1 fw-bold">Giỏ hàng</span>
             </a>
         </li>
 
@@ -105,7 +137,7 @@
   </div>
 </nav>
 
-<div class="container-fluid px-lg-5 mt-4 pb-5">
+<div class="container-fluid px-lg-5 mt-4 pb-2">
     {% with messages = get_flashed_messages(with_categories=true) %}
       {% if messages %}
         <div class="row mb-3">
@@ -127,6 +159,35 @@
 <footer class="bg-dark text-white text-center py-4 mt-auto">
     <small class="opacity-75">Sàn TMĐT Đồ Gia Dụng &copy; 2026 - Phát triển bởi Hậu</small>
 </footer>
+
+<div class="bottom-nav d-lg-none">
+    <a href="/" class="bottom-nav-item {% if request.path == '/' %}active{% endif %}">
+        <i class="bi bi-house-door-fill"></i>
+        <span>Trang chủ</span>
+    </a>
+    <a href="#" class="bottom-nav-item" id="mobileVoucherBtn">
+        <i class="bi bi-ticket-perforated-fill"></i>
+        <span>Voucher</span>
+    </a>
+    <a href="/cart" class="bottom-nav-item position-relative {% if 'cart' in request.path %}active{% endif %}">
+        <i class="bi bi-cart3"></i>
+        <span class="position-absolute top-0 start-50 translate-middle badge rounded-pill bg-danger" style="font-size: 0.6rem; margin-top: 2px; margin-left: 10px;">
+            {{ session.get('cart', {}).values() | sum }}
+        </span>
+        <span>Giỏ hàng</span>
+    </a>
+    {% if session.get('user_id') %}
+        <a href="/profile" class="bottom-nav-item {% if 'profile' in request.path %}active{% endif %}">
+            <i class="bi bi-person-circle"></i>
+            <span>Tài khoản</span>
+        </a>
+    {% else %}
+        <a href="{{ url_for('auth.login') }}" class="bottom-nav-item">
+            <i class="bi bi-box-arrow-in-right"></i>
+            <span>Đăng nhập</span>
+        </a>
+    {% endif %}
+</div>
 
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 <script>
@@ -201,10 +262,15 @@
                     const data = await response.json();
 
                     if (data.status === 'success') {
+                        // Cập nhật số lượng giỏ hàng trên Top Nav (PC)
                         const cartBadge = document.getElementById('cartBadgeCount');
                         if (cartBadge) cartBadge.innerText = data.total_items;
 
-                        const productCard = form.closest('.product-card') || form.closest('.product-section');
+                        // Cập nhật số lượng giỏ hàng trên Bottom Nav (Mobile)
+                        const mobileBadges = document.querySelectorAll('.bottom-nav-item .badge');
+                        mobileBadges.forEach(b => b.innerText = data.total_items);
+
+                        const productCard = form.closest('.product-card') || form.closest('.product-section') || form.closest('.rec-card');
                         if (productCard) {
                             const img = productCard.querySelector('img');
                             if (img) flyToCart(img);
@@ -223,12 +289,18 @@
     });
 
     function flyToCart(imgElement) {
-        const cartIcon = document.getElementById('cartIconAnim');
+        const cartIcon = document.getElementById('cartIconAnim'); // PC icon
         if (!cartIcon || !imgElement) return;
 
         const imgClone = imgElement.cloneNode(true);
         const imgRect = imgElement.getBoundingClientRect();
-        const cartRect = cartIcon.getBoundingClientRect();
+
+        // Xác định icon đích bay đến (dựa vào màn hình PC hay Mobile)
+        let targetRect = cartIcon.getBoundingClientRect();
+        if (window.innerWidth <= 991) {
+            const mobileCartIcon = document.querySelector('.bottom-nav-item i.bi-cart3');
+            if(mobileCartIcon) targetRect = mobileCartIcon.getBoundingClientRect();
+        }
 
         imgClone.style.position = 'fixed';
         imgClone.style.top = imgRect.top + 'px';
@@ -242,8 +314,8 @@
         document.body.appendChild(imgClone);
 
         setTimeout(() => {
-            imgClone.style.top = cartRect.top + 'px';
-            imgClone.style.left = cartRect.left + 'px';
+            imgClone.style.top = targetRect.top + 'px';
+            imgClone.style.left = targetRect.left + 'px';
             imgClone.style.width = '20px';
             imgClone.style.height = '20px';
             imgClone.style.opacity = '0.3';
@@ -251,22 +323,18 @@
 
         setTimeout(() => {
             imgClone.remove();
-            cartIcon.style.transition = 'transform 0.2s';
-            cartIcon.style.transform = 'scale(1.5)';
-            setTimeout(() => cartIcon.style.transform = 'scale(1)', 200);
         }, 800);
     }
 
-    // --- SỰ KIỆN LOAD DANH SÁCH VOUCHER KHI MỞ MENU ---
-    const voucherMenuBtn = document.getElementById('voucherMenuBtn');
-    if(voucherMenuBtn) {
-        voucherMenuBtn.addEventListener('click', function() {
-            fetch('/api/get_vouchers')
+    // --- SỰ KIỆN LOAD VOUCHER ---
+    function loadVoucherData() {
+        fetch('/api/get_vouchers')
             .then(res => res.json())
             .then(data => {
                 const container = document.getElementById('voucherListItems');
-                container.innerHTML = ''; // Xóa trạng thái loading
+                if(!container) return;
 
+                container.innerHTML = '';
                 if(data.length === 0) {
                     container.innerHTML = '<div class="text-center text-muted small py-3">Hiện chưa có mã nào. Vui lòng quay lại sau!</div>';
                     return;
@@ -280,7 +348,7 @@
                     item.className = 'voucher-item';
                     item.innerHTML = `
                         <div class="pe-5">
-                            <span class="voucher-code" id="code-${v.code}">${v.code}</span>
+                            <span class="voucher-code">${v.code}</span>
                             <div class="fw-bold text-dark mt-2" style="font-size: 0.9rem;">${discountText}</div>
                             <div class="small text-muted" style="font-size: 0.8rem;">Đơn tối thiểu: $${v.min_order}${limitText}</div>
                         </div>
@@ -290,14 +358,21 @@
                 });
             })
             .catch(err => console.log('Lỗi load voucher:', err));
+    }
+
+    const voucherMenuBtn = document.getElementById('voucherMenuBtn');
+    if(voucherMenuBtn) voucherMenuBtn.addEventListener('click', loadVoucherData);
+
+    const mobileVoucherBtn = document.getElementById('mobileVoucherBtn');
+    if(mobileVoucherBtn) {
+        mobileVoucherBtn.addEventListener('click', function(e) {
+            e.preventDefault();
+            alert("Mã giảm giá hôm nay: GIAM10K (Giảm $10), SALE20 (Giảm 20%)");
         });
     }
 
-    // Hàm copy mã voucher
     function copyVoucher(code) {
-        navigator.clipboard.writeText(code).then(() => {
-            alert('Đã copy mã: ' + code);
-        });
+        navigator.clipboard.writeText(code).then(() => { alert('Đã copy mã: ' + code); });
     }
 </script>
 {% block extra_scripts %}{% endblock %}

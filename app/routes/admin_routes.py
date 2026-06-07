@@ -9,18 +9,20 @@ from config.db_connection import get_mysql_connection, get_mongo_db
 # Khởi tạo Blueprint
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
+import math
+from flask import session, request, flash, redirect, url_for, render_template
+
 
 @admin_bp.route('/dashboard')
 def dashboard():
-    """Trang thống kê tổng quan, Quản lý đơn hàng và Biểu đồ Chart.js"""
+    """Trang thống kê tổng quan: Quản lý đơn, Biểu đồ, Top SP và Cảnh báo ERP"""
     user_id = session.get('user_id')
     if not user_id:
         flash('Vui lòng đăng nhập để truy cập hệ thống quản trị!', 'warning')
         return redirect(url_for('auth.login', next='/admin/dashboard'))
 
-    # Bắt tham số 'page' từ URL, mặc định là trang 1
     page = request.args.get('page', 1, type=int)
-    per_page = 10  # Số đơn hàng hiển thị trên 1 trang
+    per_page = 10
 
     conn = get_mysql_connection()
     cursor = conn.cursor(dictionary=True)
@@ -32,7 +34,7 @@ def dashboard():
             flash('⛔ Truy cập bị từ chối! Bạn không có quyền Quản trị viên.', 'danger')
             return redirect(url_for('main.index'))
 
-        # 2. Thống kê tổng quan KPI (Thẻ hiển thị)
+        # 2. Thống kê tổng quan KPI
         cursor.execute("SELECT SUM(total_amount) as revenue FROM ORDERS WHERE status = 'DELIVERED'")
         revenue = cursor.fetchone()['revenue'] or 0
 
@@ -42,16 +44,12 @@ def dashboard():
         cursor.execute("SELECT COUNT(user_id) as total_users FROM USERS WHERE role = 'CUSTOMER'")
         total_users = cursor.fetchone()['total_users'] or 0
 
-        # 3. LOGIC PHÂN TRANG ĐƠN HÀNG
+        # 3. Phân trang Đơn hàng gần đây
         total_pages = math.ceil(total_orders / per_page) if total_orders > 0 else 1
-
-        # Đảm bảo page không vượt quá giới hạn
         if page < 1: page = 1
         if page > total_pages: page = total_pages
-
         offset = (page - 1) * per_page
 
-        # Lấy danh sách đơn hàng cho trang hiện tại
         cursor.execute("""
             SELECT order_id, receiver_name, total_amount, status, created_at, payment_method
             FROM ORDERS 
@@ -60,14 +58,11 @@ def dashboard():
         """, (per_page, offset))
         recent_orders = cursor.fetchall()
 
-        # Tạo danh sách các số trang hiển thị (Chỉ hiện tối đa 5 số trang lân cận cho đẹp)
         start_page = max(1, page - 2)
         end_page = min(total_pages + 1, page + 3)
         page_range = list(range(start_page, end_page))
 
-        # ==========================================
-        # MODULE 1: THỐNG KÊ DOANH THU 7 NGÀY GẦN NHẤT
-        # ==========================================
+        # 4. Thống kê Doanh thu 7 ngày (Dành cho Chart.js)
         cursor.execute("""
             SELECT DATE(created_at) as order_date, SUM(total_amount) as daily_revenue
             FROM ORDERS 
@@ -77,32 +72,66 @@ def dashboard():
             ORDER BY DATE(created_at) ASC
         """)
         revenue_records = cursor.fetchall()
-
-        # Ép kiểu dữ liệu để đẩy xuống JS an toàn
         chart_revenue_labels = [record['order_date'].strftime('%d/%m') for record in revenue_records]
         chart_revenue_data = [float(record['daily_revenue']) for record in revenue_records]
 
-        # ==========================================
-        # MODULE 2: THỐNG KÊ TỈ LỆ TRẠNG THÁI ĐƠN HÀNG
-        # ==========================================
-        cursor.execute("""
-            SELECT status, COUNT(order_id) as status_count 
-            FROM ORDERS 
-            GROUP BY status
-        """)
+        # 5. Tỉ lệ Trạng thái Đơn hàng (Dành cho Chart.js)
+        cursor.execute("SELECT status, COUNT(order_id) as status_count FROM ORDERS GROUP BY status")
         status_records = cursor.fetchall()
 
-        # Ánh xạ từ khóa tiếng Anh sang tiếng Việt để vẽ biểu đồ
         status_map = {
             'PENDING': 'Chờ duyệt', 'PROCESSING': 'Đang chuẩn bị',
             'SHIPPING': 'Đang giao', 'DELIVERED': 'Đã giao',
             'RETURN_REQUESTED': 'Yêu cầu hoàn trả', 'RETURNED': 'Đã hoàn kho',
             'REFUNDED': 'Đã hoàn tiền', 'CANCELLED': 'Đã hủy'
         }
-
         chart_status_labels = [status_map.get(r['status'], r['status']) for r in status_records]
         chart_status_data = [r['status_count'] for r in status_records]
 
+        # 6. Cảnh báo khẩn cấp (Alerts: Hàng sắp hết & Đơn xin hoàn trả)
+        cursor.execute(
+            "SELECT COUNT(product_id) as low_stock_count FROM PRODUCT WHERE stock <= 5 AND (price > 0 OR price IS NOT NULL)")
+        low_stock_count = cursor.fetchone()['low_stock_count'] or 0
+
+        cursor.execute("SELECT COUNT(order_id) as return_count FROM ORDERS WHERE status = 'RETURN_REQUESTED'")
+        return_request_count = cursor.fetchone()['return_count'] or 0
+
+        # 7. Top 5 Sản phẩm Bán chạy nhất
+        cursor.execute("""
+            SELECT P.product_id, P.name, P.price, P.image_url, SUM(OI.quantity) as total_sold
+            FROM ORDER_ITEM OI
+            JOIN PRODUCT P ON OI.product_id = P.product_id
+            JOIN ORDERS O ON OI.order_id = O.order_id
+            WHERE O.status NOT IN ('CANCELLED', 'RETURNED', 'REFUNDED')
+            GROUP BY P.product_id, P.name, P.price, P.image_url
+            ORDER BY total_sold DESC
+            LIMIT 5
+        """)
+        top_products = cursor.fetchall()
+
+        # 8. AI Business: Đề xuất Xả hàng/Marketing (Tồn kho >= 15 nhưng bán ế)
+        cursor.execute("""
+            SELECT P.product_id, P.name, P.stock, P.price, P.image_url, COALESCE(SUM(OI.quantity), 0) as total_sold
+            FROM PRODUCT P
+            LEFT JOIN ORDER_ITEM OI ON P.product_id = OI.product_id
+            WHERE P.stock >= 15 AND (P.price > 0 OR P.price IS NOT NULL)
+            GROUP BY P.product_id, P.name, P.stock, P.price, P.image_url
+            ORDER BY total_sold ASC, P.stock DESC
+            LIMIT 5
+        """)
+        overstock_products = cursor.fetchall()
+
+        # 9. AI Business: Đề xuất Nhập kho gấp (Tồn kho <= 5)
+        cursor.execute("""
+            SELECT product_id, name, stock, price, image_url
+            FROM PRODUCT 
+            WHERE stock <= 5 AND (price > 0 OR price IS NOT NULL)
+            ORDER BY stock ASC
+            LIMIT 5
+        """)
+        low_stock_list = cursor.fetchall()
+
+        # Render và truyền toàn bộ dữ liệu xuống HTML
         return render_template('admin/dashboard.html',
                                admin_name=user['full_name'],
                                revenue=revenue,
@@ -112,11 +141,15 @@ def dashboard():
                                current_page=page,
                                total_pages=total_pages,
                                page_range=page_range,
-                               # Truyền dữ liệu vẽ biểu đồ xuống template
                                chart_revenue_labels=chart_revenue_labels,
                                chart_revenue_data=chart_revenue_data,
                                chart_status_labels=chart_status_labels,
-                               chart_status_data=chart_status_data)
+                               chart_status_data=chart_status_data,
+                               low_stock_count=low_stock_count,
+                               return_request_count=return_request_count,
+                               top_products=top_products,
+                               overstock_products=overstock_products,
+                               low_stock_list=low_stock_list)
     except Exception as e:
         print(f"❌ Lỗi Admin Dashboard: {e}")
         flash('Lỗi truy xuất dữ liệu quản trị.', 'danger')

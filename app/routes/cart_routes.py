@@ -63,7 +63,6 @@ def delete_item(product_id):
     return redirect(url_for('cart.view_cart'))
 
 
-# ĐẢM BẢO PHẢI CÓ DÒNG NÀY ĐỂ FLASK NHẬN DIỆN ĐƯỜNG DẪN
 @cart_bp.route('/checkout', methods=['GET', 'POST'])
 def checkout():
     """Trang điền thông tin giao hàng và xác nhận đơn"""
@@ -306,6 +305,82 @@ def place_order():
         conn.rollback()
         print(f"❌ Lỗi khi chốt đơn: {e}")
         flash('Có lỗi hệ thống khi xử lý đơn hàng. Vui lòng thử lại!', 'error')
+        return redirect(url_for('cart.view_cart'))
+    finally:
+        cursor.close()
+        conn.close()
+
+
+@cart_bp.route('/process_order', methods=['POST'])
+def process_order():
+    """Hàm chốt đơn hàng: Áp dụng Transaction & Pessimistic Locking chống bán âm kho"""
+    if 'user_id' not in session:
+        return redirect(url_for('auth.login'))
+
+    # Nhận thông tin giao hàng từ form
+    receiver_name = request.form.get('receiver_name')
+    phone = request.form.get('phone')
+    address = request.form.get('address')
+    payment_method = request.form.get('payment_method', 'COD')
+
+    checkout_items = session.get('final_checkout_items')
+    total_amount = session.get('final_total_amount')
+
+    if not checkout_items:
+        flash("Dữ liệu đơn hàng không hợp lệ, vui lòng thử lại.", "danger")
+        return redirect(url_for('cart.view_cart'))
+
+    conn = get_mysql_connection()
+    cursor = conn.cursor(dictionary=True)
+
+    try:
+        # 1. BẮT ĐẦU GIAO DỊCH BẢO VỆ
+        conn.start_transaction()
+
+        # 2. KIỂM TRA VÀ KHÓA KHO TỪNG MÓN HÀNG (Khóa bi quan)
+        for item in checkout_items:
+            cursor.execute("SELECT stock FROM PRODUCT WHERE product_id = %s FOR UPDATE", (item['product_id'],))
+            product_db = cursor.fetchone()
+
+            if not product_db or product_db['stock'] < item['quantity']:
+                conn.rollback()  # Hủy ngay lập tức nếu có món hết hàng
+                flash(f"Rất tiếc! Món hàng {item['title']} vừa bị khách khác mua hết.", "danger")
+                return redirect(url_for('cart.view_cart'))
+
+            # 3. TRỪ KHO AN TOÀN
+            cursor.execute("UPDATE PRODUCT SET stock = stock - %s WHERE product_id = %s",
+                           (item['quantity'], item['product_id']))
+
+        # 4. TẠO ĐƠN HÀNG MỚI VÀO BẢNG ORDERS
+        cursor.execute("""
+            INSERT INTO ORDERS (user_id, receiver_name, phone, address, total_amount, payment_method, status, created_at)
+            VALUES (%s, %s, %s, %s, %s, %s, 'PENDING', NOW())
+        """, (session['user_id'], receiver_name, phone, address, total_amount, payment_method))
+
+        order_id = cursor.lastrowid  # Lấy mã đơn hàng vừa tạo
+
+        # 5. LƯU CHI TIẾT ĐƠN HÀNG VÀO BẢNG ORDER_ITEM
+        for item in checkout_items:
+            cursor.execute("""
+                INSERT INTO ORDER_ITEM (order_id, product_id, quantity, price)
+                VALUES (%s, %s, %s, %s)
+            """, (order_id, item['product_id'], item['quantity'], item['price']))
+
+        # 6. THÀNH CÔNG: LƯU TOÀN BỘ VÀ NHẢ KHÓA DATABASE
+        conn.commit()
+
+        # Dọn dẹp giỏ hàng
+        session.pop('cart', None)
+        session.pop('final_checkout_items', None)
+
+        flash("🎉 Chúc mừng bạn đã đặt hàng thành công!", "success")
+        # return redirect(url_for('main.order_success')) # Trỏ về trang báo thành công của bạn
+        return redirect(url_for('main.index'))
+
+    except Exception as e:
+        conn.rollback()
+        print(f"❌ Lỗi Race Condition hoặc Database: {e}")
+        flash("Giao dịch bị gián đoạn, vui lòng thử lại.", "danger")
         return redirect(url_for('cart.view_cart'))
     finally:
         cursor.close()

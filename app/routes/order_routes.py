@@ -349,3 +349,4 @@ def customer_request_return(order_id):
         flash('Có lỗi xảy ra trong quá trình xử lý hồ sơ hoàn hàng.', 'danger')
 
     return redirect(url_for('order.view_orders'))
+
